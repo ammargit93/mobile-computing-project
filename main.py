@@ -1,3 +1,9 @@
+from kivy.config import Config
+
+# Set the window size first, before importing other Kivy components
+Config.set('graphics', 'width', '360')  # Adjust width
+Config.set('graphics', 'height', '640')  # Adjust height
+
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.app import MDApp
@@ -6,7 +12,7 @@ from pymongo import MongoClient
 client = MongoClient("mongodb://localhost:27017/")  
 db = client["appDB"]  
 users_collection = db["users"]
- 
+
 class LoginScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -29,7 +35,6 @@ class LoginScreen(Screen):
         self.manager.current = "signup_screen"  
     def go_to_home(self):
         self.manager.current = "home_screen"
-
 
 
 class SignupScreen(Screen):
@@ -56,15 +61,21 @@ class HomeScreen(Screen):
     def welcome_user(self, username):
         self.ids.welcome_label.text = f"Welcome {username}!"
 
+class PreAuthScreen(Screen):
+    def get_started(self):
+        self.manager.current = "login_screen"
 
 
 class AuthApp(MDApp):
     def build(self):
         self.theme_cls.primary_palette = "Teal"
         sm = ScreenManager()
+        sm.add_widget(PreAuthScreen(name="pre_auth_screen")) 
         sm.add_widget(LoginScreen(name="login_screen"))
         sm.add_widget(SignupScreen(name="signup_screen"))
         sm.add_widget(HomeScreen(name="home_screen")) 
+        
+
         return sm
 
     def go_back(self):
@@ -74,8 +85,6 @@ class AuthApp(MDApp):
         self.root.current = "login_screen"
 
     
-    
-
 
 if __name__ == '__main__':
     AuthApp().run()

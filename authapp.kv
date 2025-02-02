@@ -5,6 +5,30 @@ ScreenManager:
         name: "signup_screen"
     HomeScreen:
         name: "home_screen"
+    PreAuthScreen:
+        name: "pre_auth_screen"
+<PreAuthScreen>:
+    MDFloatLayout:
+        MDLabel:
+            text: "GigHive"
+            halign: "center"
+            font_style: "H4"
+            pos_hint: {"center_x": 0.5, "center_y": 0.9}
+
+        MDRaisedButton:
+            text: "Get Started"
+            size_hint: None, None
+            size: dp(200), dp(50)
+            pos_hint: {"center_x": 0.5, "center_y": 0.25}
+            md_bg_color: 0.6, 0.2, 0.8, 1  # Purple color (R, G, B, A)
+            text_color: 1, 1, 1, 1  # White text color
+            on_release: root.get_started()
+            border_radius:  [25, 25, 25, 25] 
+        Image:
+            source: "images/preauth.png"  
+            size_hint: None, None
+            size: dp(800), dp(600)  
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}
 
 <HomeScreen>:
     MDBoxLayout:
@@ -36,7 +60,7 @@ ScreenManager:
         pos_hint: {"center_x": 0.5, "center_y": 0.5}
         elevation: 8
         radius: [20, 20, 20, 20]
-        md_bg_color: 1, 1, 1, 1  # White Background
+        md_bg_color: 1, 1, 1, 1  
 
         MDBoxLayout:
             orientation: "vertical"
