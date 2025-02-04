@@ -7,6 +7,7 @@ ScreenManager:
         name: "home_screen"
     PreAuthScreen:
         name: "pre_auth_screen"
+
 <PreAuthScreen>:
     MDFloatLayout:
         MDLabel:
@@ -53,68 +54,60 @@ ScreenManager:
 
 
 <LoginScreen>:
-    md_bg_color: 0.95, 0.95, 0.95, 1  
+    md_bg_color: 0.95, 0.95, 0.95, 1  # Light background color
 
     MDCard:
-        size_hint: 0.7, 0.75
+        size_hint: 0.8, 0.65  # Reduced height
         pos_hint: {"center_x": 0.5, "center_y": 0.5}
-        elevation: 8
+        elevation: 4
         radius: [20, 20, 20, 20]
-        md_bg_color: 1, 1, 1, 1  
+        md_bg_color: 1, 1, 1, 1  # White card background
 
         MDBoxLayout:
             orientation: "vertical"
             spacing: dp(15)
             padding: dp(30)
-            pos_hint: {"center_x": 0.5, "center_y": 0.5}
 
-            MDLabel:
-                text: "Login"
-                halign: "center"
-                bold: True
-                theme_text_color: "Primary"
+            MDBoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(40)
 
-            MDLabel:
-                text: "Username"
-                theme_text_color: "Secondary"
-                bold: True
-                font_size: dp(14)
+                # MDIconButton:
+                #     icon: "arrow-left"
+                #     theme_text_color: "Custom"
+                #     text_color: 1, 0.4, 0.2, 1  # Orange color
+                #     on_release: app.root.current = "pre_auth_screen"
+
+                MDLabel:
+                    text: "Login"
+                    font_name: "fonts/Athelas-Regular/Athelas-Regular.ttf"
+                    font_size: "32sp"
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: 1, 0.4, 0.2, 1  # Orange text
 
             MDTextField:
                 id: username
                 hint_text: "Enter your username"
-                max_text_length: 15
-                mode: "rectangle"
-                size_hint_x: 1
                 icon_left: "account"
-                text_color: 0, 0, 0, 1
-                line_color_focus: 0.1, 0.6, 1, 1
-                background_color: 1, 1, 1, 1
-
-            MDLabel:
-                text: "Password"
-                theme_text_color: "Secondary"
-                bold: True
-                font_size: dp(14)
+                mode: "rectangle"
 
             MDTextField:
                 id: password
                 hint_text: "Enter your password"
-                max_text_length: 15
-                mode: "rectangle"
-                size_hint_x: 1
                 icon_left: "lock"
                 password: True
-                text_color: 0, 0, 0, 1
-                line_color_focus: 0.1, 0.6, 1, 1
-                background_color: 1, 1, 1, 1
+                mode: "rectangle"
+                right_icon: "eye"
 
             MDRaisedButton:
                 text: "Login"
-                md_bg_color: 0.1, 0.6, 1, 1
-                text_color: 1, 1, 1, 1
-                size_hint_x: 1
-                elevation: 4
+                md_bg_color: 1, 0.6, 0.2, 1  # Gradient-like orange
+                text_color: 1, 1, 1, 1  # White text
+                size_hint: 1, None
+                height: dp(50)
+                elevation: 3
                 on_release: root.login()
 
             MDBoxLayout:
@@ -125,104 +118,91 @@ ScreenManager:
                 halign: "center"
 
                 MDLabel:
-                    text: "Signup first if you haven't already."
+                    text: "Don't have an account?"
                     theme_text_color: "Hint"
                     font_size: dp(12)
 
                 MDFlatButton:
-                    text: "Signup"
-                    text_color: 0.1, 0.6, 1, 1  
+                    text: "Sign Up"
+                    text_color: 1, 0.4, 0.2, 1  # Orange color
                     on_release: root.go_to_signup()
 
 
 <SignupScreen>:
-    md_bg_color: 0.95, 0.95, 0.95, 1  
+    md_bg_color: 0.95, 0.95, 0.95, 1  # Light background color
 
     MDCard:
-        size_hint: 0.7, 0.75
+        size_hint: 0.8, 0.85
         pos_hint: {"center_x": 0.5, "center_y": 0.5}
-        elevation: 8
+        elevation: 4
         radius: [20, 20, 20, 20]
-        md_bg_color: 1, 1, 1, 1  
+        md_bg_color: 1, 1, 1, 1  # White card background
 
         MDBoxLayout:
             orientation: "vertical"
             spacing: dp(15)
             padding: dp(30)
-            pos_hint: {"center_x": 0.5, "center_y": 0.5}
 
             MDBoxLayout:
                 orientation: "horizontal"
                 size_hint_y: None
                 height: dp(40)
-                padding: [dp(0), dp(0), dp(0), dp(10)]
 
                 MDIconButton:
                     icon: "arrow-left"
-                    on_release: app.go_back()  
+                    theme_text_color: "Custom"
+                    text_color: 1, 0.4, 0.2, 1 
+                    on_release: app.root.current = "login_screen"
 
             MDLabel:
-                text: "Signup"
+                text: "Sign up"
+                font_name: "fonts/Athelas-Regular/Athelas-Regular.ttf"
+                font_size: "32sp"
                 halign: "center"
-                bold: True
-                theme_text_color: "Primary"
-
-            MDLabel:
-                text: "Username"
-                theme_text_color: "Secondary"
-                bold: True
-                font_size: dp(14)
+                theme_text_color: "Custom"
+                text_color: 1, 0.4, 0.2, 1  # Orange text
 
             MDTextField:
                 id: username
-                hint_text: "Enter your username"
-                max_text_length: 15
-                mode: "rectangle"
-                size_hint_x: 1
+                hint_text: "Enter your full name"
                 icon_left: "account"
-                text_color: 0, 0, 0, 1
-                line_color_focus: 0.1, 0.6, 1, 1
-                background_color: 1, 1, 1, 1
-
-            MDLabel:
-                text: "Email"
-                theme_text_color: "Secondary"
-                bold: True
-                font_size: dp(14)
+                mode: "rectangle"
 
             MDTextField:
                 id: email
-                hint_text: "Enter your email"
-                max_text_length: 30
-                mode: "rectangle"
-                size_hint_x: 1
+                hint_text: "Enter your email address"
                 icon_left: "email"
-                text_color: 0, 0, 0, 1
-                line_color_focus: 0.1, 0.6, 1, 1
-                background_color: 1, 1, 1, 1
-
-            MDLabel:
-                text: "Password"
-                theme_text_color: "Secondary"
-                bold: True
-                font_size: dp(14)
+                mode: "rectangle"
 
             MDTextField:
                 id: password
                 hint_text: "Enter your password"
-                max_text_length: 15
-                mode: "rectangle"
-                size_hint_x: 1
                 icon_left: "lock"
                 password: True
-                text_color: 0, 0, 0, 1
-                line_color_focus: 0.1, 0.6, 1, 1
-                background_color: 1, 1, 1, 1
+                mode: "rectangle"
+                right_icon: "eye"
+
+            MDTextField:
+                id: confirm_password
+                hint_text: "Re-enter your password"
+                icon_left: "lock"
+                password: True
+                mode: "rectangle"
+                right_icon: "eye-off"
 
             MDRaisedButton:
-                text: "Signup"
-                md_bg_color: 0.1, 0.6, 1, 1
-                text_color: 1, 1, 1, 1
-                size_hint_x: 1
-                elevation: 4
+                text: "Sign Up"
+                md_bg_color: 1, 0.6, 0.2, 1  # Gradient-like orange
+                text_color: 1, 1, 1, 1  # White text
+                size_hint: 1, None
+                height: dp(50)
+                elevation: 3
                 on_release: root.signup()
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(40)
+                spacing: dp(5)
+
+               
