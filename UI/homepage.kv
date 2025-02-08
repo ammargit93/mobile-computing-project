@@ -1,0 +1,48 @@
+ScreenManager:
+    HomeScreen:
+        name: "home_screen"
+
+<HomeScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+        md_bg_color: 0.05, 0.05, 0.1, 1 
+
+        MDTopAppBar:
+            title: "🚀 GigHive Chatbot"
+            elevation: 6
+            left_action_items: [["menu", lambda x: app.open_menu()]]
+            right_action_items: [["logout", lambda x: app.go_back()]]
+            md_bg_color: 0.1, 0.1, 0.3, 1
+            specific_text_color: 0, 1, 1, 1  
+
+        ScrollView:
+            MDBoxLayout:
+                id: chat_container
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                padding: dp(15)
+                spacing: dp(8)
+
+        MDBoxLayout:
+            size_hint_y: None
+            height: dp(65)
+            padding: dp(10)
+
+            MDTextField:
+                id: message_input
+                hint_text: "Type a command..."
+                mode: "fill"
+                size_hint_x: 0.55
+                width: dp(250)  # Set a fixed width
+                height: dp(10)
+                text_color_focus: 0, 1, 1, 1  # Neon cyan
+                line_color_focus: 0.5, 0.5, 1, 1  # Blue accent
+                md_bg_color: 0.1, 0.1, 0.3, 0.8  # Slight glass effect
+                radius: [15, 15, 15, 15]
+
+            MDFillRoundFlatButton:
+                text: "🚀 Send"
+                md_bg_color: 0, 1, 1, 1  
+                text_color: 0, 0, 0, 1
+                on_release: root.send_message()

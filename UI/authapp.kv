@@ -31,26 +31,6 @@ ScreenManager:
             size: dp(800), dp(600)  
             pos_hint: {"center_x": 0.5, "center_y": 0.6}
 
-<HomeScreen>:
-    MDBoxLayout:
-        orientation: "vertical"
-        spacing: dp(20)
-        padding: dp(20)
-        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-
-        MDLabel:
-            id: welcome_label
-            text: "Welcome!"
-            halign: "center"
-            theme_text_color: "Primary"
-
-        MDRaisedButton:
-            text: "Logout"
-            md_bg_color: 1, 0, 0, 1
-            text_color: 1, 1, 1, 1
-            pos_hint: {"center_x": 0.5}
-            on_release: app.go_back()
-
 
 
 <LoginScreen>:
@@ -173,6 +153,21 @@ ScreenManager:
                 hint_text: "Enter your email address"
                 icon_left: "email"
                 mode: "rectangle"
+
+            MDBoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: dp(56)
+
+                MDLabel:
+                    text: "Select your role"
+                    theme_text_color: "Secondary"
+
+                MDDropDownItem:
+                    id: roletype
+                    text: "Select Role"
+                    on_release: root.get_screen("signup_screen").open_role_dropdown()
+
 
             MDTextField:
                 id: password
