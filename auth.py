@@ -28,7 +28,7 @@ class LoginScreen(Screen):
             user = users_collection.find_one({"username": username, "password": password})
             if user:
                 self.show_snackbar(f"Login successful for {username}", "green")
-                self.manager.get_screen("home_screen").welcome_user(username)
+                self.manager.get_screen("home_screen").home()
                 self.go_to_home()
                 app = MDApp.get_running_app()
                 app.session_manager.create_session(username)
@@ -68,42 +68,15 @@ class SignupScreen(Screen):
         super().__init__(**kwargs)
         self.role_menu = None
 
-    def on_kv_post(self, *args):
-        # This method is called after the KV rules have been applied
-        self.create_role_dropdown()
-
-    def create_role_dropdown(self):
-        role_options = ["Client", "Freelancer"]
-        menu_items = [
-            {
-                "text": role,
-                "viewclass": "OneLineListItem",
-                "on_release": lambda x=role: self.set_role(x),
-            }
-            for role in role_options
-        ]
-
-        self.role_menu = MDDropdownMenu(
-            caller=self.ids.roletype,  # Now self.ids is available
-            items=menu_items,
-            width_mult=3
-        )
-
-    def open_role_dropdown(self):
-        self.role_menu.open()
-
-    def set_role(self, role):
-        self.ids.roletype.text = role
-        self.role_menu.dismiss()
-
+    
     def signup(self):
         username = self.ids.username.text
         email = self.ids.email.text
         password = self.ids.password.text
         confirm_password = self.ids.confirm_password.text
-        role = self.ids.roletype.text
+        # role = self.ids.roletype.text
         
-        if username and email and role != "Select Role" and password and confirm_password:
+        if username and email and password and confirm_password:
             if password != confirm_password:
                 self.show_snackbar("Passwords do not match!", "red")
                 return
@@ -113,7 +86,7 @@ class SignupScreen(Screen):
                 self.show_snackbar("Username already exists.", "red")
             else:
                 users_collection.insert_one(
-                    {"username": username, "email": email, "password": password, "roletype": role}
+                    {"username": username, "email": email, "password": password}
                 )
                 self.manager.current = "login_screen"
                 self.show_snackbar(f"Signup successful for {username}", "green")

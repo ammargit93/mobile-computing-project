@@ -13,7 +13,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivy.core.window import Window
 from kivy.properties import StringProperty
 from kivy.metrics import dp
-
+from model import *
 
 class HomeScreen(Screen):
     def home(self):
@@ -21,45 +21,51 @@ class HomeScreen(Screen):
     def send_message(self):
         user_input = self.ids.message_input.text.strip()
         print(user_input)
+        
         if user_input:
-            self.add_message(user_input, [0.2, 0.2, 0.6, 1])  # Blue user message
+            self.add_message(user_input, [0.2, 0.2, 0.6, 1], align="right")  # Blue background
             self.ids.message_input.text = ""
+            response = chat_with_bot(user_input=user_input)
+            self.add_message(response, [0.2, 0.2, 0.2, 1], align="full")  # Gray background
+
+        
     
-    
-    def add_message(self, text, bg_color, align_right=True):
-        message_box = BoxLayout(
-            size_hint_y=None,
-            height=dp(40),
-            padding=[dp(10), dp(5)],
-            spacing=dp(5),
-            size_hint_x=1  # Full width
-        )
+    def add_message(self, text, bg_color, align="left"):
+        text = text.encode("utf-8").decode("utf-8")  # Fix encoding issues
+
+        # Determine full width for messages
+        max_width = self.width * 0.98  # 98% of screen width
 
         message_label = MDLabel(
             text=text,
             theme_text_color="Custom",
             text_color=[1, 1, 1, 1],  # White text
-            size_hint_x=None,
-            width=self.width * 0.6,  # Limit width
-            font_size="16sp",
-            halign="right" if align_right else "left"
+            font_size="18sp",
+            size_hint_x=1,  # Use full width
+            markup=True,
+            padding=[dp(1), dp(1)],  # Only 1mm padding
+            text_size=(max_width, None),
         )
 
-        message_label.md_bg_color = bg_color  # Set background color
+        message_label.texture_update()
+        message_label.height = message_label.texture_size[1] + dp(2)  # Remove extra height
+        message_label.md_bg_color = bg_color
 
-        # Fix: Use BoxLayout to push message to the correct side
-        if align_right:
-            message_box.add_widget(BoxLayout(size_hint_x=0.4))  # Empty space on left
-            message_box.add_widget(message_label)
-        else:
-            message_box.add_widget(message_label)
-            message_box.add_widget(BoxLayout(size_hint_x=0.4))  # Empty space on right
+        message_box = BoxLayout(
+            size_hint_y=None,
+            height=message_label.height,  # Auto height
+            padding=[dp(1), dp(1)],  # 1mm padding
+            spacing=dp(2),  # Small spacing
+            size_hint_x=1,  # Full width
+        )
+
+        message_box.add_widget(message_label)
 
         self.ids.chat_container.add_widget(message_box)
 
 
+
     def logout(self):
-        """Handles logout and clears session data."""
         app = MDApp.get_running_app()
         app.session_manager.clear_session()
         self.manager.current = "login_screen"

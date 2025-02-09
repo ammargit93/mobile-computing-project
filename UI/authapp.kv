@@ -154,20 +154,6 @@ ScreenManager:
                 icon_left: "email"
                 mode: "rectangle"
 
-            MDBoxLayout:
-                orientation: "vertical"
-                size_hint_y: None
-                height: dp(56)
-
-                MDLabel:
-                    text: "Select your role"
-                    theme_text_color: "Secondary"
-
-                MDDropDownItem:
-                    id: roletype
-                    text: "Select Role"
-                    on_release: root.get_screen("signup_screen").open_role_dropdown()
-
 
             MDTextField:
                 id: password
