@@ -11,24 +11,54 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.properties import StringProperty, ListProperty
 from kivy.graphics import Color, RoundedRectangle
 from homescreen import HomeScreen
+import win32security
+import win32api
+import pywintypes
+import face_recognition
+import cv2
+import os
 
 client = MongoClient("mongodb://localhost:27017/")
 db = client["appDB"]
 users_collection = db["users"]
 
-class LoginScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
+
+import cv2
+import numpy as np
+from deepface import DeepFace
+
+def load_and_convert_image(image_path):
+    # Load the image
+    image = cv2.imread(image_path)
+    if image is None:
+        print("Error: Image not found or unable to load!")
+        return None
+
+    # Convert the image to RGB format
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Ensure the image is in 8-bit format
+    if image_rgb.dtype != np.uint8:
+        image_rgb = (255 * (image_rgb / np.max(image_rgb))).astype(np.uint8)
+
+    # Check if the image is valid
+    if image_rgb.size == 0:
+        print("Error: Image is empty after conversion!")
+        return None
+    
+    return image_rgb
+
+
+class LoginScreen(Screen):
     def login(self):
         username = self.ids.username.text
         password = self.ids.password.text
-        # roletype = self.ids.roletype.text
+
         if username and password:
             user = users_collection.find_one({"username": username, "password": password})
             if user:
                 self.show_snackbar(f"Login successful for {username}", "green")
-                self.manager.get_screen("home_screen").home()
                 self.go_to_home()
                 app = MDApp.get_running_app()
                 app.session_manager.create_session(username)
@@ -38,14 +68,45 @@ class LoginScreen(Screen):
         else:
             self.show_snackbar("Please fill in all fields", "orange")
 
+
+
+
+    def biometric_login(self):
+        reference_img = "user_face2.jpg"  # Path to the reference image
+
+        # Open webcam without a visible window
+        cap = cv2.VideoCapture(0)
+        
+        if not cap.isOpened():
+            self.show_snackbar("Error: Could not access the webcam!", "red")
+            return
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                self.show_snackbar("Error: Failed to capture webcam frame!", "red")
+                break
+
+            # Perform face verification
+            try:
+                result = DeepFace.verify(frame, reference_img, model_name="Facenet", enforce_detection=False)
+                match = result["verified"]
+            except Exception as e:
+                print("⚠️ Face not detected:", e)
+                match = False
+
+            if match:
+                self.show_snackbar("Biometric Login Successful!", "green")
+                self.go_to_home()
+                break  # Exit loop once a match is found
+
+        cap.release()  # Release webcam
+
+
     def show_snackbar(self, message, color):
         snackbar = MDSnackbar(
             MDLabel(text=message),
-            MDSnackbarActionButton(
-                text="Done",
-                theme_text_color="Custom",
-                text_color=color,
-            ),
+            MDSnackbarActionButton(text="Done", theme_text_color="Custom", text_color=color),
             y=dp(24),
             pos_hint={"center_x": 0.5},
             size_hint_x=0.9,
@@ -53,8 +114,10 @@ class LoginScreen(Screen):
         )
         snackbar.open()
 
+
     def go_to_signup(self):
         self.manager.current = "signup_screen"
+
     
     def go_to_login(self):
         self.manager.current = "login_screen"
@@ -74,7 +137,6 @@ class SignupScreen(Screen):
         email = self.ids.email.text
         password = self.ids.password.text
         confirm_password = self.ids.confirm_password.text
-        # role = self.ids.roletype.text
         
         if username and email and password and confirm_password:
             if password != confirm_password:
@@ -92,6 +154,7 @@ class SignupScreen(Screen):
                 self.show_snackbar(f"Signup successful for {username}", "green")
         else:
             self.show_snackbar("Please fill in all fields", "orange")
+
 
     def show_snackbar(self, message, color):
         snackbar = MDSnackbar(
@@ -122,7 +185,6 @@ class AuthApp(MDApp):
         self.session_manager = SessionManager()
 
     def build(self):
-        # Load KV files from UI folder
         Builder.load_file('UI/authapp.kv')
         Builder.load_file('UI/homepage.kv')
 

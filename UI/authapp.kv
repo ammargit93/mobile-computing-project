@@ -11,7 +11,7 @@ ScreenManager:
 <PreAuthScreen>:
     MDFloatLayout:
         MDLabel:
-            text: "GigHive"
+            text: "GenQuery"
             halign: "center"
             font_style: "H4"
             pos_hint: {"center_x": 0.5, "center_y": 0.9}
@@ -26,9 +26,9 @@ ScreenManager:
             on_release: root.get_started()
             border_radius:  [25, 25, 25, 25] 
         Image:
-            source: "images/preauth.png"  
+            source: "images/basedlabs_image.png"  
             size_hint: None, None
-            size: dp(800), dp(600)  
+            size: dp(400), dp(300)  
             pos_hint: {"center_x": 0.5, "center_y": 0.6}
 
 
@@ -52,12 +52,6 @@ ScreenManager:
                 orientation: "horizontal"
                 size_hint_y: None
                 height: dp(40)
-
-                # MDIconButton:
-                #     icon: "arrow-left"
-                #     theme_text_color: "Custom"
-                #     text_color: 1, 0.4, 0.2, 1  # Orange color
-                #     on_release: app.root.current = "pre_auth_screen"
 
                 MDLabel:
                     text: "Login"
@@ -90,6 +84,15 @@ ScreenManager:
                 elevation: 3
                 on_release: root.login()
 
+            MDRaisedButton:
+                text: "Login with Biometric"
+                md_bg_color: 0.2, 0.6, 1, 1  # Blue button
+                text_color: 1, 1, 1, 1
+                size_hint: 1, None
+                height: dp(50)
+                elevation: 3
+                on_release: root.biometric_login()
+
             MDBoxLayout:
                 orientation: "horizontal"
                 size_hint_y: None
@@ -106,7 +109,6 @@ ScreenManager:
                     text: "Sign Up"
                     text_color: 1, 0.4, 0.2, 1  # Orange color
                     on_release: root.go_to_signup()
-
 
 <SignupScreen>:
     md_bg_color: 0.95, 0.95, 0.95, 1  # Light background color
