@@ -11,10 +11,6 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.properties import StringProperty, ListProperty
 from kivy.graphics import Color, RoundedRectangle
 from homescreen import HomeScreen
-import win32security
-import win32api
-import pywintypes
-import face_recognition
 import cv2
 import os
 
@@ -29,24 +25,16 @@ import numpy as np
 from deepface import DeepFace
 
 def load_and_convert_image(image_path):
-    # Load the image
     image = cv2.imread(image_path)
     if image is None:
         print("Error: Image not found or unable to load!")
         return None
-
-    # Convert the image to RGB format
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    # Ensure the image is in 8-bit format
     if image_rgb.dtype != np.uint8:
         image_rgb = (255 * (image_rgb / np.max(image_rgb))).astype(np.uint8)
-
-    # Check if the image is valid
     if image_rgb.size == 0:
         print("Error: Image is empty after conversion!")
         return None
-    
     return image_rgb
 
 
@@ -71,23 +59,18 @@ class LoginScreen(Screen):
 
 
 
-    def biometric_login(self):
-        reference_img = "user_face2.jpg"  # Path to the reference image
 
-        # Open webcam without a visible window
+    def biometric_login(self):
+        reference_img = "user_face2.jpg"  
         cap = cv2.VideoCapture(0)
-        
         if not cap.isOpened():
             self.show_snackbar("Error: Could not access the webcam!", "red")
             return
-
         while True:
             ret, frame = cap.read()
             if not ret:
                 self.show_snackbar("Error: Failed to capture webcam frame!", "red")
                 break
-
-            # Perform face verification
             try:
                 result = DeepFace.verify(frame, reference_img, model_name="Facenet", enforce_detection=False)
                 match = result["verified"]
@@ -98,7 +81,8 @@ class LoginScreen(Screen):
             if match:
                 self.show_snackbar("Biometric Login Successful!", "green")
                 self.go_to_home()
-                break  # Exit loop once a match is found
+                
+                break  
 
         cap.release()  # Release webcam
 
@@ -187,6 +171,7 @@ class AuthApp(MDApp):
     def build(self):
         Builder.load_file('UI/authapp.kv')
         Builder.load_file('UI/homepage.kv')
+        # Builder.load_file('UI/menu.kv')
 
         self.theme_cls.primary_palette = "Teal"
         sm = ScreenManager()

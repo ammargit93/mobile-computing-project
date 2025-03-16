@@ -8,7 +8,7 @@ class SessionManager:
     def create_session(self, username):
         session_data = {
             'username': username,
-            'expires_at': (datetime.now() + timedelta(days=1)).isoformat()  # Session expires in 1 day
+            'expires_at': (datetime.now() + timedelta(days=1)).isoformat()  
         }
         with open(self.session_file, 'w') as f:
             json.dump(session_data, f)

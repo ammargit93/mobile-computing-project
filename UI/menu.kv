@@ -28,26 +28,26 @@
                     height: dp(40)
 
                 MDList:
+                    OneLineAvatarIconListItem:
+                        text: "📜 Biometric"
+                        IconLeftWidget:
+                            icon: "fingerprint"
+                        Widget:
+                            size_hint_x: None
+                            width: dp(40)  # Give space for the checkbox
+                            MDCheckbox:
+                                id: biometric_checkbox
+                                on_active: root.toggle_biometric(self.active)
+
+
                     OneLineIconListItem:
-                        text: "📜 Chat History"
+                        text: "⚙️ History"
                         on_release: app.show_history()
                         IconLeftWidget:
                             icon: "history"
 
                     OneLineIconListItem:
-                        text: "⚙️ Settings"
-                        on_release: app.open_settings()
-                        IconLeftWidget:
-                            icon: "cog"
-
-                    OneLineIconListItem:
-                        text: "ℹ️ About"
-                        on_release: app.show_about()
+                        text: "ℹ️ Help"
+                        on_release: app.show_help()
                         IconLeftWidget:
                             icon: "information-outline"
-
-                    OneLineIconListItem:
-                        text: "🚪 Logout"
-                        on_release: app.logout()
-                        IconLeftWidget:
-                            icon: "logout"

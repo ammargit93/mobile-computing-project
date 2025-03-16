@@ -18,6 +18,9 @@ from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.label import MDLabel
+from kivymd.uix.selectioncontrol import MDSwitch
+from kivymd.uix.selectioncontrol import MDCheckbox
+from kivymd.uix.list import OneLineAvatarIconListItem
 from kivymd.uix.menu import MDDropdownMenu
 from kivy.core.window import Window
 from kivy.properties import StringProperty
