@@ -17,31 +17,41 @@ from model import *
 from PIL import Image, ImageDraw, ImageFont
 from kivy.graphics.texture import Texture
 from kivymd.uix.selectioncontrol import MDSwitch
-
+from pymongo import MongoClient
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.popup import Popup
 from kivy.core.window import Window
 from kivy.utils import platform
 from kivy.network.urlrequest import UrlRequest
 import requests
-
+# from auth import history_collection
 from dotenv import load_dotenv
+
+client = MongoClient("mongodb://localhost:27017/")
+db = client["appDB"]
+history_collection = db['history']
 
 load_dotenv()
 class HomeScreen(Screen):  # Now Screen is properly imported
+    def __init__(self, **kwargs):
+        super(HomeScreen, self).__init__(**kwargs)
+        self.rag_chain = None 
+        
     def home(self):
         self.ids.chat_container.clear_widgets()  # Clear previous messages
-
+        
     def send_message(self):
         user_input = self.ids.message_input.text.strip()
         if not user_input:
             return
         self.add_message(user_input, [0.2, 0.2, 0.6, 1], align="right")
         self.ids.message_input.text = ""
+        resp = requests.get('http://localhost:5000/query')
         try:
-            if self.rag_chain:response = self.rag_chain.run(user_input)
+            if self.rag_chain:
+                response = self.rag_chain.run(user_input)
             else:response = chat_with_llama(prompt=user_input)
-            
+            history_collection.insert_one({"user":user_input,"bot":response})
             self.add_message(response, [0.2, 0.2, 0.2, 1], align="full")
         except Exception as e:
             self.add_message(f"Error: {e}", [0.6, 0.2, 0.2, 1], align="full")
@@ -103,7 +113,7 @@ class HomeScreen(Screen):  # Now Screen is properly imported
             self.add_message(f"📄 Uploaded file: {selected_file}", [0.2, 0.6, 0.2, 1], align="right")
 
             try:
-                os.environ["OPENAI_API_KEY"] = os.getenv("GROQ_TOKEN")  # Replace with your actual API key
+                os.environ["OPENAI_API_KEY"] = os.getenv("GROQ_TOKEN")  
                 os.environ["OPENAI_API_BASE"] = "https://api.groq.com/openai/v1"
 
                 llm = ChatOpenAI(model_name="llama3-8b-8192", temperature=0.3)

@@ -38,7 +38,7 @@ rag_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, chain_type
 
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-
+@app.route('/query')
 def chat_with_llama(prompt):
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -59,4 +59,4 @@ def chat_with_llama(prompt):
         return f"Error: {response.status_code} - {response.text}"
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="localhost", port=5000, debug=True)

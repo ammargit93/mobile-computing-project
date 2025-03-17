@@ -17,7 +17,7 @@ import os
 client = MongoClient("mongodb://localhost:27017/")
 db = client["appDB"]
 users_collection = db["users"]
-
+# history_collection = db['history']
 
 
 import cv2
