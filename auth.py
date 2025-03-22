@@ -4,93 +4,36 @@ from session import SessionManager
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.app import MDApp
 from pymongo import MongoClient
-from kivymd.uix.snackbar.snackbar import MDSnackbar, MDSnackbarActionButton
+from kivymd.uix.snackbar import MDSnackbar, MDSnackbarActionButton
 from kivymd.uix.label import MDLabel
-from kivymd.uix.menu import MDDropdownMenu
-from kivymd.uix.boxlayout import MDBoxLayout
-from kivy.properties import StringProperty, ListProperty
-from kivy.graphics import Color, RoundedRectangle
 from homescreen import HomeScreen
-import cv2
-import os
+import random
 
 client = MongoClient("mongodb://localhost:27017/")
 db = client["appDB"]
 users_collection = db["users"]
-# history_collection = db['history']
-
-
-import cv2
-import numpy as np
-from deepface import DeepFace
-
-def load_and_convert_image(image_path):
-    image = cv2.imread(image_path)
-    if image is None:
-        print("Error: Image not found or unable to load!")
-        return None
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    if image_rgb.dtype != np.uint8:
-        image_rgb = (255 * (image_rgb / np.max(image_rgb))).astype(np.uint8)
-    if image_rgb.size == 0:
-        print("Error: Image is empty after conversion!")
-        return None
-    return image_rgb
-
+otp_collection = db["otps"]
 
 class LoginScreen(Screen):
-    def login(self):
-        username = self.ids.username.text
-        password = self.ids.password.text
-
-        if username and password:
-            user = users_collection.find_one({"username": username, "password": password})
+    def go_to_otp(self):
+        phone_number = self.ids.phone_number.text.strip()
+        if phone_number and phone_number.isdigit():
+            user = users_collection.find_one({"phone_number": phone_number})
             if user:
-                self.show_snackbar(f"Login successful for {username}", "green")
-                self.go_to_home()
-                app = MDApp.get_running_app()
-                app.session_manager.create_session(username)
+                otp = str(random.randint(100000, 999999))
+                otp_collection.insert_one({"phone_number": phone_number, "otp": otp})
+                self.show_snackbar(f"OTP sent to {phone_number}", "green")
+                self.manager.current = "otp_screen"
             else:
-                self.show_snackbar("User not found. Redirecting to Signup.", "red")
-                self.go_to_signup()
+                self.show_snackbar("User not found. Please sign up.", "red")
+                self.manager.current = "signup_screen"
         else:
-            self.show_snackbar("Please fill in all fields", "orange")
-
-
-
-
-
-    def biometric_login(self):
-        reference_img = "user_face2.jpg"  
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            self.show_snackbar("Error: Could not access the webcam!", "red")
-            return
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                self.show_snackbar("Error: Failed to capture webcam frame!", "red")
-                break
-            try:
-                result = DeepFace.verify(frame, reference_img, model_name="Facenet", enforce_detection=False)
-                match = result["verified"]
-            except Exception as e:
-                print("⚠️ Face not detected:", e)
-                match = False
-
-            if match:
-                self.show_snackbar("Biometric Login Successful!", "green")
-                self.go_to_home()
-                
-                break  
-
-        cap.release()  # Release webcam
-
+            self.show_snackbar("Enter a valid phone number.", "orange")
 
     def show_snackbar(self, message, color):
         snackbar = MDSnackbar(
             MDLabel(text=message),
-            MDSnackbarActionButton(text="Done", theme_text_color="Custom", text_color=color),
+            MDSnackbarActionButton(text="OK", theme_text_color="Custom", text_color=color),
             y=dp(24),
             pos_hint={"center_x": 0.5},
             size_hint_x=0.9,
@@ -98,70 +41,60 @@ class LoginScreen(Screen):
         )
         snackbar.open()
 
-
-    def go_to_signup(self):
-        self.manager.current = "signup_screen"
-
-    
-    def go_to_login(self):
-        self.manager.current = "login_screen"
-    
-    def go_to_home(self):
-        self.manager.current = "home_screen"
-
-
 class SignupScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.role_menu = None
-
-    
     def signup(self):
-        username = self.ids.username.text
-        email = self.ids.email.text
-        password = self.ids.password.text
-        confirm_password = self.ids.confirm_password.text
+        full_name = self.ids.full_name.text.strip()
+        phone_number = self.ids.phone_number.text.strip()
         
-        if username and email and password and confirm_password:
-            if password != confirm_password:
-                self.show_snackbar("Passwords do not match!", "red")
-                return
-
-            existing_user = users_collection.find_one({"username": username})
+        if full_name and phone_number.isdigit():
+            existing_user = users_collection.find_one({"phone_number": phone_number})
             if existing_user:
-                self.show_snackbar("Username already exists.", "red")
+                self.show_snackbar("Phone number already registered.", "red")
             else:
-                users_collection.insert_one(
-                    {"username": username, "email": email, "password": password}
-                )
-                self.manager.current = "login_screen"
-                self.show_snackbar(f"Signup successful for {username}", "green")
+                users_collection.insert_one({"full_name": full_name, "phone_number": phone_number})
+                self.show_snackbar("Signup successful. Please verify OTP.", "green")
+                self.manager.current = "otp_screen"
         else:
-            self.show_snackbar("Please fill in all fields", "orange")
-
+            self.show_snackbar("Enter valid details.", "orange")
 
     def show_snackbar(self, message, color):
         snackbar = MDSnackbar(
-            MDLabel(
-                text=message,
-            ),
-            MDSnackbarActionButton(
-                text="Done",
-                theme_text_color="Custom",
-                text_color=color,
-            ),
+            MDLabel(text=message),
+            MDSnackbarActionButton(text="OK", theme_text_color="Custom", text_color=color),
             y=dp(24),
             pos_hint={"center_x": 0.5},
-            size_hint_x=0.5,
+            size_hint_x=0.9,
             md_bg_color="#E8D8D7",
         )
         snackbar.open()
+
+class OTPScreen(Screen):
+    def verify_otp(self):
+        phone_number = self.manager.get_screen("login_screen").ids.phone_number.text.strip()
+        entered_otp = self.ids.otp.text.strip()
         
+        otp_entry = otp_collection.find_one({"phone_number": phone_number, "otp": entered_otp})
+        if otp_entry:
+            otp_collection.delete_one({"phone_number": phone_number})
+            self.show_snackbar("OTP Verified. Login Successful!", "green")
+            app = MDApp.get_running_app()
+            app.session_manager.create_session(phone_number)
+            self.manager.current = "home_screen"
+        else:
+            self.show_snackbar("Invalid OTP. Try again.", "red")
 
-class PreAuthScreen(Screen):
-    def get_started(self):
-        self.manager.current = "login_screen"
+    def show_snackbar(self, message, color):
+        snackbar = MDSnackbar(
+            MDLabel(text=message),
+            MDSnackbarActionButton(text="OK", theme_text_color="Custom", text_color=color),
+            y=dp(24),
+            pos_hint={"center_x": 0.5},
+            size_hint_x=0.9,
+            md_bg_color="#E8D8D7",
+        )
+        snackbar.open()
 
+from kivy.lang import Builder
 
 class AuthApp(MDApp):
     def __init__(self, **kwargs):
@@ -169,30 +102,14 @@ class AuthApp(MDApp):
         self.session_manager = SessionManager()
 
     def build(self):
-        Builder.load_file('UI/authapp.kv')
-        Builder.load_file('UI/homepage.kv')
-        # Builder.load_file('UI/menu.kv')
-
         self.theme_cls.primary_palette = "Teal"
+        
+        # Load KV file
+        Builder.load_file("UI/authapp.kv")  # Ensure path is correct
+
         sm = ScreenManager()
-
-        session = self.session_manager.get_session()
-        if session:
-            sm.add_widget(HomeScreen(name="home_screen"))
-            sm.current = "home_screen"
-            sm.get_screen("home_screen").home()
-        else:
-            sm.add_widget(PreAuthScreen(name="pre_auth_screen"))
-            sm.current = "pre_auth_screen"
-
         sm.add_widget(LoginScreen(name="login_screen"))
         sm.add_widget(SignupScreen(name="signup_screen"))
+        sm.add_widget(OTPScreen(name="otp_screen"))
         sm.add_widget(HomeScreen(name="home_screen"))
-
         return sm
-
-    def go_back(self):
-        login_screen = self.root.get_screen("login_screen")
-        login_screen.ids.username.text = ""
-        login_screen.ids.password.text = ""
-        self.root.current = "login_screen"

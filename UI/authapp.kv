@@ -3,122 +3,18 @@ ScreenManager:
         name: "login_screen"
     SignupScreen:
         name: "signup_screen"
-    HomeScreen:
-        name: "home_screen"
-    PreAuthScreen:
-        name: "pre_auth_screen"
-
-<PreAuthScreen>:
-    MDFloatLayout:
-        MDLabel:
-            text: "GenQuery"
-            halign: "center"
-            font_style: "H4"
-            pos_hint: {"center_x": 0.5, "center_y": 0.9}
-
-        MDRaisedButton:
-            text: "Get Started"
-            size_hint: None, None
-            size: dp(200), dp(50)
-            pos_hint: {"center_x": 0.5, "center_y": 0.25}
-            md_bg_color: 0.6, 0.2, 0.8, 1  # Purple color (R, G, B, A)
-            text_color: 1, 1, 1, 1  # White text color
-            on_release: root.get_started()
-            border_radius:  [25, 25, 25, 25] 
-        Image:
-            source: "images/basedlabs_image.png"  
-            size_hint: None, None
-            size: dp(400), dp(300)  
-            pos_hint: {"center_x": 0.5, "center_y": 0.6}
-
-
-
-<LoginScreen>:
-    md_bg_color: 0.95, 0.95, 0.95, 1  # Light background color
-
-    MDCard:
-        size_hint: 0.8, 0.65  # Reduced height
-        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-        elevation: 4
-        radius: [20, 20, 20, 20]
-        md_bg_color: 1, 1, 1, 1  # White card background
-
-        MDBoxLayout:
-            orientation: "vertical"
-            spacing: dp(15)
-            padding: dp(30)
-
-            MDBoxLayout:
-                orientation: "horizontal"
-                size_hint_y: None
-                height: dp(40)
-
-                MDLabel:
-                    text: "Login"
-                    font_name: "fonts/Athelas-Regular/Athelas-Regular.ttf"
-                    font_size: "32sp"
-                    halign: "center"
-                    theme_text_color: "Custom"
-                    text_color: 1, 0.4, 0.2, 1  # Orange text
-
-            MDTextField:
-                id: username
-                hint_text: "Enter your username"
-                icon_left: "account"
-                mode: "rectangle"
-
-            MDTextField:
-                id: password
-                hint_text: "Enter your password"
-                icon_left: "lock"
-                password: True
-                mode: "rectangle"
-                right_icon: "eye"
-
-            MDRaisedButton:
-                text: "Login"
-                md_bg_color: 1, 0.6, 0.2, 1  # Gradient-like orange
-                text_color: 1, 1, 1, 1  # White text
-                size_hint: 1, None
-                height: dp(50)
-                elevation: 3
-                on_release: root.login()
-
-            MDRaisedButton:
-                text: "Login with Biometric"
-                md_bg_color: 0.2, 0.6, 1, 1  # Blue button
-                text_color: 1, 1, 1, 1
-                size_hint: 1, None
-                height: dp(50)
-                elevation: 3
-                on_release: root.biometric_login()
-
-            MDBoxLayout:
-                orientation: "horizontal"
-                size_hint_y: None
-                height: dp(40)
-                spacing: dp(5)
-                halign: "center"
-
-                MDLabel:
-                    text: "Don't have an account?"
-                    theme_text_color: "Hint"
-                    font_size: dp(12)
-
-                MDFlatButton:
-                    text: "Sign Up"
-                    text_color: 1, 0.4, 0.2, 1  # Orange color
-                    on_release: root.go_to_signup()
+    OTPScreen:
+        name: "otp_screen"
 
 <SignupScreen>:
-    md_bg_color: 0.95, 0.95, 0.95, 1  # Light background color
+    md_bg_color: 0.95, 0.95, 0.95, 1
 
     MDCard:
         size_hint: 0.8, 0.85
         pos_hint: {"center_x": 0.5, "center_y": 0.5}
         elevation: 4
         radius: [20, 20, 20, 20]
-        md_bg_color: 1, 1, 1, 1  # White card background
+        md_bg_color: 1, 1, 1, 1
 
         MDBoxLayout:
             orientation: "vertical"
@@ -133,59 +29,110 @@ ScreenManager:
                 MDIconButton:
                     icon: "arrow-left"
                     theme_text_color: "Custom"
-                    text_color: 1, 0.4, 0.2, 1 
+                    text_color: 1, 0.4, 0.2, 1
                     on_release: app.root.current = "login_screen"
 
             MDLabel:
                 text: "Sign up"
-                font_name: "fonts/Athelas-Regular/Athelas-Regular.ttf"
                 font_size: "32sp"
                 halign: "center"
                 theme_text_color: "Custom"
-                text_color: 1, 0.4, 0.2, 1  # Orange text
+                text_color: 1, 0.4, 0.2, 1
 
             MDTextField:
-                id: username
+                id: full_name
                 hint_text: "Enter your full name"
                 icon_left: "account"
                 mode: "rectangle"
 
             MDTextField:
-                id: email
-                hint_text: "Enter your email address"
-                icon_left: "email"
+                id: phone_number
+                hint_text: "Enter your phone number"
+                icon_left: "phone"
                 mode: "rectangle"
-
-
-            MDTextField:
-                id: password
-                hint_text: "Enter your password"
-                icon_left: "lock"
-                password: True
-                mode: "rectangle"
-                right_icon: "eye"
-
-            MDTextField:
-                id: confirm_password
-                hint_text: "Re-enter your password"
-                icon_left: "lock"
-                password: True
-                mode: "rectangle"
-                right_icon: "eye-off"
+                input_filter: "int"
 
             MDRaisedButton:
                 text: "Sign Up"
-                md_bg_color: 1, 0.6, 0.2, 1  # Gradient-like orange
-                text_color: 1, 1, 1, 1  # White text
+                md_bg_color: 1, 0.6, 0.2, 1
+                text_color: 1, 1, 1, 1
                 size_hint: 1, None
                 height: dp(50)
                 elevation: 3
                 on_release: root.signup()
 
-            MDBoxLayout:
-                orientation: "horizontal"
-                size_hint_y: None
-                height: dp(40)
-                spacing: dp(5)
+<LoginScreen>:
+    md_bg_color: 0.95, 0.95, 0.95, 1
 
-               
+    MDCard:
+        size_hint: 0.8, 0.5
+        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+        elevation: 4
+        radius: [20, 20, 20, 20]
+        md_bg_color: 1, 1, 1, 1
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: dp(15)
+            padding: dp(30)
+
+            MDLabel:
+                text: "Login"
+                font_size: "32sp"
+                halign: "center"
+                theme_text_color: "Custom"
+                text_color: 1, 0.4, 0.2, 1
+
+            MDTextField:
+                id: phone_number
+                hint_text: "Enter your phone number"
+                icon_left: "phone"
+                mode: "rectangle"
+                input_filter: "int"
+
+            MDRaisedButton:
+                text: "Next"
+                md_bg_color: 1, 0.6, 0.2, 1
+                text_color: 1, 1, 1, 1
+                size_hint: 1, None
+                height: dp(50)
+                elevation: 3
+                on_release: root.go_to_otp()
+
+<OTPScreen>:
+    md_bg_color: 0.95, 0.95, 0.95, 1
+
+    MDCard:
+        size_hint: 0.8, 0.5
+        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+        elevation: 4
+        radius: [20, 20, 20, 20]
+        md_bg_color: 1, 1, 1, 1
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: dp(15)
+            padding: dp(30)
+
+            MDLabel:
+                text: "Enter OTP"
+                font_size: "28sp"
+                halign: "center"
+                theme_text_color: "Custom"
+                text_color: 1, 0.4, 0.2, 1
+
+            MDTextField:
+                id: otp
+                hint_text: "Enter OTP sent to your phone"
+                icon_left: "key"
+                mode: "rectangle"
+                input_filter: "int"
+
+            MDRaisedButton:
+                text: "Verify"
+                md_bg_color: 1, 0.6, 0.2, 1
+                text_color: 1, 1, 1, 1
+                size_hint: 1, None
+                height: dp(50)
+                elevation: 3
+                on_release: root.verify_otp()
