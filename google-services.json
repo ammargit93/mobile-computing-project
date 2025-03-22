@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "446716394986",
+    "project_id": "fir-otp-706aa",
+    "storage_bucket": "fir-otp-706aa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:446716394986:android:36dab558a8f0e1c42a8693",
+        "android_client_info": {
+          "package_name": "org.kivy.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3Su9-mWt1ALZO4vec3W2p72GYmmm73w0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

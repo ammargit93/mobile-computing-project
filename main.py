@@ -4,10 +4,7 @@ Config.set('graphics', 'width', '360')
 Config.set('graphics', 'height', '640')
 
 from auth import *
-
-
-if __name__ == '__main__':
-    from kivy.app import App
+from kivy.app import App
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -24,4 +21,6 @@ from kivymd.uix.list import OneLineAvatarIconListItem
 from kivymd.uix.menu import MDDropdownMenu
 from kivy.core.window import Window
 from kivy.properties import StringProperty
-AuthApp().run()
+# AuthApp().run()
+if __name__ == '__main__':
+    AuthApp().run()  # Run Authentication app first

@@ -1,56 +1,45 @@
-# import cv2
-# from deepface import DeepFace
+from flask import Flask, request, jsonify
+import requests
 
-# # Load reference face embedding (e.g., user_face.jpg)
-# reference_img = "user_face2.jpg"
+app = Flask(__name__)
+API_KEY = "AIzaSyBUd2d1aAaYBSsQpLy48SMszol90MmLlVk"
 
-# def compare_faces(frame):
-#     try:
-#         result = DeepFace.verify(frame, reference_img, model_name="Facenet", enforce_detection=False)
-#         return result["verified"], result["distance"]
-#     except Exception as e:
-#         print("⚠️ Face not detected:", e)
-#         return False, None
+@app.route("/send_otp", methods=["POST"])
+def send_otp():
+    phone_number = request.json.get("phone_number")
+    print(phone_number)
+    if not phone_number:
+        return jsonify({"error": "Phone number is required"}), 400
 
-# # Start webcam capture
-# cap = cv2.VideoCapture(0)
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key={API_KEY}"
+    data = {"phoneNumber": phone_number}
 
-# while cap.isOpened():
-#     ret, frame = cap.read()
-#     if not ret:
-#         break
+    response = requests.post(url, json=data)
+    result = response.json()
+    print(result)
+    if "sessionInfo" in result:
+        return jsonify({"session_info": result["sessionInfo"]})  # Return session info for verification
+    else:
+        return jsonify({"error": "Failed to send OTP", "details": result}), 400
 
-#     match, distance = compare_faces(frame)
+@app.route("/verify_otp", methods=["POST"])
+def verify_otp():
+    session_info = request.json.get("session_info")
+    otp_code = request.json.get("otp_code")
 
-#     text = "MATCH ✅" if match else "NO MATCH ❌"
-#     cv2.putText(frame, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0) if match else (0, 0, 255), 2)
-    
-#     cv2.imshow("Face Matching", frame)
+    if not session_info or not otp_code:
+        return jsonify({"error": "Session info and OTP code are required"}), 400
 
-#     if cv2.waitKey(1) & 0xFF == ord("q"):  # Press 'q' to exit
-#         break
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key={API_KEY}"
+    data = {"sessionInfo": session_info, "code": otp_code}
 
-# cap.release()
-# cv2.destroyAllWindows()
-from kivy.lang import Builder
+    response = requests.post(url, json=data)
+    result = response.json()
 
-from kivymd.app import MDApp
+    if "idToken" in result:
+        return jsonify({"success": True, "idToken": result["idToken"]})  # Successfully verified
+    else:
+        return jsonify({"error": "OTP verification failed", "details": result}), 400
 
-
-KV = '''
-MDFloatLayout:
-    MDCheckbox:
-        size_hint: None, None
-        size: "48dp", "48dp"
-        pos_hint: {'center_x': .5, 'center_y': .5}
-'''
-
-
-class Example(MDApp):
-    def build(self):
-        self.theme_cls.primary_palette = "Green"
-        self.theme_cls.theme_style = "Dark"
-        return Builder.load_string(KV)
-
-
-Example().run()
+if __name__ == "__main__":
+    app.run(debug=True)

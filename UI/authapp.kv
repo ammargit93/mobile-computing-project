@@ -52,6 +52,19 @@ ScreenManager:
                 mode: "rectangle"
                 input_filter: "int"
 
+            MDBoxLayout:
+                orientation: "vertical"
+                spacing: dp(10)
+
+                MDLabel:
+                    text: "Select User Type"
+                    theme_text_color: "Secondary"
+
+                MDDropDownItem:
+                    id: user_type
+                    text: "Select"
+                    on_release: root.open_menu(self)
+
             MDRaisedButton:
                 text: "Sign Up"
                 md_bg_color: 1, 0.6, 0.2, 1
@@ -76,6 +89,17 @@ ScreenManager:
             spacing: dp(15)
             padding: dp(30)
 
+            MDBoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(40)
+
+                MDIconButton:
+                    icon: "arrow-left"
+                    theme_text_color: "Custom"
+                    text_color: 1, 0.4, 0.2, 1
+                    on_release: app.root.current = "signup_screen"
+
             MDLabel:
                 text: "Login"
                 font_size: "32sp"
@@ -88,7 +112,7 @@ ScreenManager:
                 hint_text: "Enter your phone number"
                 icon_left: "phone"
                 mode: "rectangle"
-                input_filter: "int"
+                input_filter: lambda text, from_undo: text if text in "+0123456789" else ""
 
             MDRaisedButton:
                 text: "Next"
@@ -113,6 +137,17 @@ ScreenManager:
             orientation: "vertical"
             spacing: dp(15)
             padding: dp(30)
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(40)
+
+                MDIconButton:
+                    icon: "arrow-left"
+                    theme_text_color: "Custom"
+                    text_color: 1, 0.4, 0.2, 1
+                    on_release: app.root.current = "login_screen"
 
             MDLabel:
                 text: "Enter OTP"
