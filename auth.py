@@ -13,6 +13,7 @@ import requests
 client = MongoClient("mongodb://localhost:27017/")
 db = client["appDB"]
 users_collection = db["users"]
+notes_collection = db["notes"]
 
 def send_otp(phone_number):
     url = "http://127.0.0.1:5000/send_otp"
@@ -23,10 +24,14 @@ def verify_otp(session_info, otp_code):
     url = "http://127.0.0.1:5000/verify_otp"
     response = requests.post(url, json={"session_info": session_info, "otp_code": otp_code})
     return response.json()
-
+phone_num = None
 class LoginScreen(Screen):
     def go_to_otp(self):
         phone_number = self.ids.phone_number.text.strip()
+        print(f"""Phone number: {phone_number}\n\n\n""")
+        global phone_num
+        phone_num = str(phone_number[3:])
+        print(f"""Phone number: {phone_num}\n\n\n""")
         if phone_number:
             response = send_otp(phone_number)
             if "session_info" in response:
@@ -103,11 +108,12 @@ class OTPScreen(Screen):
         response = verify_otp(self.session_info, entered_otp)
         if response.get("success"):
             self.show_snackbar("OTP Verified. Login Successful!", "green")
-            user_type = response.get("user_type", "Guest")
+            user = users_collection.find_one({"phone_number": phone_num})
+            user_type = user['user_type']
             if user_type == "Admin":
-                self.manager.current = "admin_home_screen"
+                self.manager.current = "admin_home"
             else:
-                self.manager.current = "guest_home_screen"
+                self.manager.current = "guest_home"
         else:
             self.show_snackbar("Invalid OTP. Try again.", "red")
 
@@ -139,8 +145,8 @@ class AuthApp(MDApp):
         sm.add_widget(LoginScreen(name="login_screen"))
         sm.add_widget(SignupScreen(name="signup_screen"))
         sm.add_widget(OTPScreen(name="otp_screen"))
-        sm.add_widget(GuestHomeScreen(name="guest_home_screen"))
-        sm.add_widget(AdminHomeScreen(name="admin_home_screen"))
+        sm.add_widget(GuestHomeScreen(name="guest_home"))
+        sm.add_widget(AdminHomeScreen(name="admin_home"))
         return sm
 
 if __name__ == '__main__':

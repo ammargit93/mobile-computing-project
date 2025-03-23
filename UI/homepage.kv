@@ -7,21 +7,25 @@ ScreenManager:
 <GuestHomeScreen>:
     md_bg_color: 0.95, 0.95, 0.95, 1
 
-    MDTopAppBar:
-        title: "Notes"
-        pos_hint: {"top": 1}
-        left_action_items: [["menu", lambda x: nav_drawer.set_state("toggle")]]
-        right_action_items: [["plus", lambda x: root.show_add_note_popup()], ["arrow-right", lambda x: app.change_screen("login_screen")]]
-
     MDBoxLayout:
         orientation: "vertical"
-        padding: dp(20)
         spacing: dp(10)
 
+        # Top App Bar (Header)
+        MDTopAppBar:
+            title: "Notes"
+            elevation: 4
+            left_action_items: [["menu", lambda x: nav_drawer.set_state("toggle")]]
+            right_action_items: [["plus", lambda x: root.show_add_note_popup()], ["logout", lambda x: root.change_screen("login_screen")]]
+            md_bg_color: app.theme_cls.primary_color  # Use primary color for the header
+            specific_text_color: 1, 1, 1, 1  # White text color
+
+        # Main Content
         ScrollView:
             MDList:
                 id: notes_list
 
+    # Navigation Drawer
     MDNavigationDrawer:
         id: nav_drawer
         BoxLayout:
@@ -37,28 +41,41 @@ ScreenManager:
                 text: "Logout"
                 on_release: app.root.current = "login_screen"
 
+
+
 <AdminHomeScreen>:
     md_bg_color: 0.95, 0.95, 0.95, 1
 
-    MDTopAppBar:
-        title: "Admin Panel"
-        pos_hint: {"top": 1}
-        left_action_items:[["arrow-left", lambda x: app.change_screen("login_screen")]]
-
     MDBoxLayout:
         orientation: "vertical"
-        padding: dp(20)
         spacing: dp(10)
 
-        MDLabel:
-            text: "All Registered Users"
-            font_style: "H6"
+        # Top App Bar (Header)
+        MDTopAppBar:
+            title: "Admin Dashboard"
+            elevation: 4
+            left_action_items: [["menu", lambda x: nav_drawer.set_state("toggle")]]
+            right_action_items: [["logout", lambda x: root.change_screen("login_screen")]]
+            md_bg_color: app.theme_cls.primary_color  # Use primary color for the header
+            specific_text_color: 1, 1, 1, 1  # White text color
 
+        # Main Content
         ScrollView:
             MDList:
-                OneLineListItem:
-                    text: "User 1: John Doe - Student"
-                OneLineListItem:
-                    text: "User 2: Alice Smith - Admin"
-                OneLineListItem:
-                    text: "User 3: Bob Johnson - Student"
+                id: user_list
+
+    # Navigation Drawer
+    MDNavigationDrawer:
+        id: nav_drawer
+        BoxLayout:
+            orientation: "vertical"
+            spacing: dp(20)
+            padding: dp(20)
+
+            MDLabel:
+                text: "Menu"
+                font_style: "H5"
+
+            MDRectangleFlatButton:
+                text: "Logout"
+                on_release: app.root.current = "login_screen"
