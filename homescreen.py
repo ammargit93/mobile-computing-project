@@ -8,7 +8,8 @@ from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.textfield import MDTextField
 from kivy.uix.boxlayout import BoxLayout
 from kivy.metrics import dp
-from auth import notes_collection
+from config import notes_collection
+from kivymd.app import MDApp  
 
 class NotePopupContent(BoxLayout):
     def __init__(self, **kwargs):
@@ -17,9 +18,8 @@ class NotePopupContent(BoxLayout):
         self.spacing = dp(10)
         self.padding = dp(10)
         self.size_hint_y = None
-        self.height = dp(200)  # Initial height, will adjust dynamically
-
-        # Title Field
+        self.height = dp(200)  
+        
         self.title_field = MDTextField(
             hint_text="Title",
             mode="rectangle",
@@ -73,14 +73,28 @@ class GuestHomeScreen(Screen):
             note_text = f"{title}\n{description}" 
             self.ids.notes_list.add_widget(OneLineListItem(text=note_text))
             self.notes.append(note_text)
-            # notes_collection.insert_one({"title": title, "description": description,"user": session.username})
+            session_data = MDApp.get_running_app().session_manager.get_session()
+            print(f"Session Data: {session_data}\n\n\n")
+            if session_data:
+                username = session_data.get("username", "Guest")
+            else:
+                username = "Guest"
+            notes_collection.insert_one({"title": title, "description": description, "user": username})
+
         self.dismiss_popup()
 
     def dismiss_popup(self, *args):
         self.dialog.dismiss()
 
     def change_screen(self, screen_name):
+        if screen_name == 'logout_screen':
+            self.logout()
         self.manager.current = screen_name
+
+    def logout(self):
+        self.app.session_manager.clear_session()
+        self.manager.current = "login_screen"
+
 
         
 class AdminHomeScreen(Screen):
@@ -95,5 +109,5 @@ class AdminHomeScreen(Screen):
             self.ids.user_list.add_widget(OneLineListItem(text=user))
 
     def go_back(self):
-        """Returns to the login screen."""
+        MDApp.get_running_app().session_manager.clear_session()
         self.manager.current = "login_screen"

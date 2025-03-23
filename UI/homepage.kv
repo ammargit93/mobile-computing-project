@@ -55,9 +55,9 @@ ScreenManager:
             title: "Admin Dashboard"
             elevation: 4
             left_action_items: [["menu", lambda x: nav_drawer.set_state("toggle")]]
-            right_action_items: [["logout", lambda x: root.change_screen("login_screen")]]
-            md_bg_color: app.theme_cls.primary_color  # Use primary color for the header
-            specific_text_color: 1, 1, 1, 1  # White text color
+            right_action_items: [["logout", lambda x: root.go_back()]]
+            md_bg_color: app.theme_cls.primary_color  
+            specific_text_color: 1, 1, 1, 1 
 
         # Main Content
         ScrollView:
