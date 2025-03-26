@@ -1,3 +1,4 @@
+from kivy.clock import Clock  # Missing import
 from kivy.uix.screenmanager import Screen
 from kivy.lang import Builder
 from kivymd.app import MDApp
@@ -8,10 +9,10 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.textfield import MDTextField
 from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.scrollview import MDScrollView
 from kivy.metrics import dp
 from config import notes_collection
-from kivymd.app import MDApp  
 
 class NotePopupContent(BoxLayout):
     def __init__(self, **kwargs):
@@ -25,34 +26,52 @@ class NotePopupContent(BoxLayout):
         self.title_field = MDTextField(
             hint_text="Title",
             mode="rectangle",
-            multiline=False,  # Single line for title
+            multiline=False,
             size_hint_y=None,
             height=dp(48)
         )
         self.add_widget(self.title_field)
 
-        # Description Field (Multiline)
         self.description_field = MDTextField(
             hint_text="Description",
             mode="rectangle",
-            multiline=True,  # Enable multiline
+            multiline=True,
             size_hint_y=None,
-            height=dp(100)  # Initial height, will adjust dynamically
-        )
+            height=dp(100))
         self.add_widget(self.description_field)
-
-        # Bind to adjust height dynamically
         self.description_field.bind(height=self.adjust_height)
 
     def adjust_height(self, instance, value):
-        """Adjust the height of the popup content based on the description field."""
         self.height = self.title_field.height + self.description_field.height + dp(20)
         
         
-from kivymd.uix.boxlayout import MDBoxLayout
-
 class GuestHomeScreen(Screen):
     notes = ListProperty([])
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.notes = []
+
+    def on_enter(self):
+        # Use Clock to ensure widgets are ready
+        Clock.schedule_once(self._load_notes)
+
+    def _load_notes(self, dt):
+        if hasattr(self.ids, 'notes_list'):
+            self.ids.notes_list.clear_widgets()  
+            session_data = MDApp.get_running_app().session_manager.get_session()
+            username = session_data.get("username", "Guest") if session_data else "Guest"
+            user_notes = notes_collection.find({"user": username})
+            for note in user_notes:
+                title = note.get("title", "")
+                description = note.get("description", "")
+                note_item = OneLineListItem(
+                    text=title,
+                    on_release=lambda x, t=title, d=description: self.show_note_details(t, d)
+                )
+
+                self.ids.notes_list.add_widget(note_item)
+                self.notes.append(f"{title}\n{description}")
 
     def show_add_note_popup(self):
         self.dialog = MDDialog(
@@ -64,34 +83,29 @@ class GuestHomeScreen(Screen):
                 MDRaisedButton(text="ADD", on_release=self.add_note),
             ],
             size_hint=(0.8, None),
-            height=dp(300) 
-        )
+            height=dp(300))
         self.dialog.open()
 
     def add_note(self, *args):
         content = self.dialog.content_cls
         title = content.title_field.text.strip()
         description = content.description_field.text.strip()
-        if title or description: 
-            note_text = f"{title}\n{description}" 
-            note_item = OneLineListItem(text=title, on_release=lambda x: self.show_note_details(title, description))
+        if title or description:
+            note_item = OneLineListItem(
+                text=title,
+                on_release=lambda x, t=title, d=description: self.show_note_details(t, d))
             self.ids.notes_list.add_widget(note_item)
-            self.notes.append(note_text)
             session_data = MDApp.get_running_app().session_manager.get_session()
-            if session_data:
-                username = session_data.get("username", "Guest")
-            else:
-                username = "Guest"
-            notes_collection.insert_one({"title": title, "description": description, "user": username})
-
+            username = session_data.get("username", "Guest") if session_data else "Guest"
+            notes_collection.insert_one({
+                "title": title, 
+                "description": description, 
+                "user": username})
         self.dismiss_popup()
 
     def show_note_details(self, title, description):
-        """Display a popup with the note's title and description."""
-        # Create a scrollable content layout
         scroll_view = MDScrollView()
 
-        # Add the description as a label inside the scroll view
         description_label = MDLabel(
             text=description,
             size_hint_y=None,
@@ -114,31 +128,31 @@ class GuestHomeScreen(Screen):
         )
         dialog.open()
     
-    
-    def dismiss_popup(self, *args):
-        self.dialog.dismiss()
 
-    def change_screen(self, screen_name):
-        if screen_name == 'logout_screen':
-            self.logout()
-        self.manager.current = screen_name
+    def dismiss_popup(self, *args):
+        if hasattr(self, 'dialog'):
+            self.dialog.dismiss()
 
     def logout(self):
-        self.app.session_manager.clear_session()
+        app = MDApp.get_running_app()
+        if hasattr(app, 'session_manager'):
+            app.session_manager.clear_session()
         self.manager.current = "login_screen"
-
         
 class AdminHomeScreen(Screen):
     def on_enter(self):
-        users = [
-            "User 1: John Doe - Student",
-            "User 2: Alice Smith - Admin",
-            "User 3: Bob Johnson - Student",
-        ]
-        self.ids.user_list.clear_widgets()
-        for user in users:
-            self.ids.user_list.add_widget(OneLineListItem(text=user))
+        if hasattr(self.ids, 'user_list'):
+            self.ids.user_list.clear_widgets()
+            users = [
+                "User 1: John Doe - Student",
+                "User 2: Alice Smith - Admin",
+                "User 3: Bob Johnson - Student",
+            ]
+            for user in users:
+                self.ids.user_list.add_widget(OneLineListItem(text=user))
 
     def go_back(self):
-        MDApp.get_running_app().session_manager.clear_session()
+        app = MDApp.get_running_app()
+        if hasattr(app, 'session_manager'):
+            app.session_manager.clear_session()
         self.manager.current = "login_screen"
