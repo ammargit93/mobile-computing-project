@@ -1,12 +1,14 @@
 from kivy.uix.screenmanager import Screen
 from kivy.lang import Builder
 from kivymd.app import MDApp
+from kivymd.uix.label import MDLabel
 from kivy.properties import ListProperty
 from kivymd.uix.list import OneLineListItem
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.textfield import MDTextField
 from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.scrollview import MDScrollView
 from kivy.metrics import dp
 from config import notes_collection
 from kivymd.app import MDApp  
@@ -47,7 +49,8 @@ class NotePopupContent(BoxLayout):
         self.height = self.title_field.height + self.description_field.height + dp(20)
         
         
- 
+from kivymd.uix.boxlayout import MDBoxLayout
+
 class GuestHomeScreen(Screen):
     notes = ListProperty([])
 
@@ -71,10 +74,10 @@ class GuestHomeScreen(Screen):
         description = content.description_field.text.strip()
         if title or description: 
             note_text = f"{title}\n{description}" 
-            self.ids.notes_list.add_widget(OneLineListItem(text=note_text))
+            note_item = OneLineListItem(text=title, on_release=lambda x: self.show_note_details(title, description))
+            self.ids.notes_list.add_widget(note_item)
             self.notes.append(note_text)
             session_data = MDApp.get_running_app().session_manager.get_session()
-            print(f"Session Data: {session_data}\n\n\n")
             if session_data:
                 username = session_data.get("username", "Guest")
             else:
@@ -83,6 +86,35 @@ class GuestHomeScreen(Screen):
 
         self.dismiss_popup()
 
+    def show_note_details(self, title, description):
+        """Display a popup with the note's title and description."""
+        # Create a scrollable content layout
+        scroll_view = MDScrollView()
+
+        # Add the description as a label inside the scroll view
+        description_label = MDLabel(
+            text=description,
+            size_hint_y=None,
+            height=dp(200),  # Set a height for the label
+            valign="top",
+            halign="left",
+            padding=(dp(10), dp(10)),  # Add padding for better readability
+        )
+        description_label.bind(texture_size=description_label.setter("size"))  # Adjust size to fit text
+        scroll_view.add_widget(description_label)
+
+        # Create and open the dialog
+        dialog = MDDialog(
+            title=title,
+            text=description,
+            buttons=[
+                MDFlatButton(text="CLOSE", on_release=lambda x: dialog.dismiss())
+            ],
+            size_hint=(0.8, None),
+        )
+        dialog.open()
+    
+    
     def dismiss_popup(self, *args):
         self.dialog.dismiss()
 
@@ -94,7 +126,6 @@ class GuestHomeScreen(Screen):
     def logout(self):
         self.app.session_manager.clear_session()
         self.manager.current = "login_screen"
-
 
         
 class AdminHomeScreen(Screen):

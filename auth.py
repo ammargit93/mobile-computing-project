@@ -9,7 +9,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from session import SessionManager
 from homescreen import GuestHomeScreen, AdminHomeScreen
 import requests
-from kivymd.app import MDApp  # Ensure this import is at the top of your file
+from kivymd.app import MDApp 
 import pyotp
 from dotenv import load_dotenv
 import os
@@ -59,6 +59,8 @@ def send_email(to_email, subject, body):
 
 phone_num = None
 gotp = None
+
+
 class LoginScreen(Screen):
     def go_to_otp(self):
         phone_number = self.ids.phone_number.text.strip()
