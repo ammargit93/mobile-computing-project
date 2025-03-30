@@ -8,6 +8,7 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.menu import MDDropdownMenu
 from session import SessionManager
 from homescreen import GuestHomeScreen, AdminHomeScreen
+from filescreen import FilesScreen
 import requests
 from kivymd.app import MDApp 
 import pyotp
@@ -196,6 +197,7 @@ class AuthApp(MDApp):
         self.theme_cls.primary_palette = "Teal"
         Builder.load_file("UI/authapp.kv")  
         Builder.load_file("UI/homepage.kv")   
+        Builder.load_file("UI/files.kv")   
 
         sm = ScreenManager()
         sm.add_widget(LoginScreen(name="login_screen"))
@@ -203,6 +205,7 @@ class AuthApp(MDApp):
         sm.add_widget(OTPScreen(name="otp_screen"))
         sm.add_widget(GuestHomeScreen(name="guest_home"))
         sm.add_widget(AdminHomeScreen(name="admin_home"))
+        sm.add_widget(FilesScreen(name="files_screen"))
         session = self.session_manager.get_session()
         print(session)
         if session:

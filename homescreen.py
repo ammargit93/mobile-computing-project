@@ -13,6 +13,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.scrollview import MDScrollView
 from kivy.metrics import dp
 from config import notes_collection
+from filescreen import *
 
 class NotePopupContent(BoxLayout):
     def __init__(self, **kwargs):
@@ -53,8 +54,19 @@ class GuestHomeScreen(Screen):
         self.notes = []
 
     def on_enter(self):
-        # Use Clock to ensure widgets are ready
         Clock.schedule_once(self._load_notes)
+    
+    def nav_to_chatbot(self):
+        """Navigate to chatbot screen"""
+        self.manager.current = "chatbot_screen"
+    
+    def nav_to_files(self):
+        """Navigate to files screen"""
+        self.manager.current = "files_screen"
+    
+    def nav_to_ocr(self):
+        """Navigate to OCR screen"""
+        self.manager.current = "ocr_screen"
 
     def _load_notes(self, dt):
         if hasattr(self.ids, 'notes_list'):
@@ -69,7 +81,6 @@ class GuestHomeScreen(Screen):
                     text=title,
                     on_release=lambda x, t=title, d=description: self.show_note_details(t, d)
                 )
-
                 self.ids.notes_list.add_widget(note_item)
                 self.notes.append(f"{title}\n{description}")
 

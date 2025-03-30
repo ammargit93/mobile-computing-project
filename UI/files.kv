@@ -1,0 +1,96 @@
+<FilesScreen>:
+    name: "files_screen"
+    md_bg_color: 0.95, 0.95, 0.95, 1
+
+    MDBoxLayout:
+        orientation: "vertical"
+        spacing: dp(10)
+
+        MDTopAppBar:
+            title: "File Manager"
+            elevation: 4
+            left_action_items: [["menu", lambda x: nav_drawer.set_state("toggle")]]
+            right_action_items: [["plus", lambda x: root.show_file_chooser()], ["refresh", lambda x: root.refresh_files()]]
+            md_bg_color: app.theme_cls.primary_color
+            specific_text_color: 1, 1, 1, 1
+
+        # Main Content
+        ScrollView:
+            MDList:
+                id: files_list
+                padding: dp(10)
+                spacing: dp(10)
+
+    # Navigation Drawer (same as GuestHomeScreen)
+    MDNavigationDrawer:
+        id: nav_drawer
+        BoxLayout:
+            orientation: "vertical"
+            spacing: dp(10)
+            padding: dp(10)
+            size_hint_y: None
+            height: self.minimum_height
+
+            MDLabel:
+                text: "Menu"
+                font_style: "H5"
+                size_hint_y: None
+                height: dp(50)
+                padding: [dp(10), dp(10)]
+
+            MDBoxLayout:
+                orientation: "vertical"
+                spacing: dp(5)
+                padding: dp(5)
+                size_hint_y: None
+                height: self.minimum_height
+
+                MDRectangleFlatButton:
+                    text: "Notes"
+                    on_release: app.root.current = "guest_home"
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "Chatbot"
+                    on_release: root.nav_to_chatbot()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "Files"
+                    on_release: app.root.current = "files_screen"
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (0.9, 0.9, 0.9, 1)  # Highlighted as current screen
+
+                MDRectangleFlatButton:
+                    text: "OCR"
+                    on_release: root.nav_to_ocr()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "Logout"  # Make sure the quotes are properly closed
+                    on_release: app.root.current = "login_screen"
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)

@@ -17,8 +17,8 @@ ScreenManager:
             elevation: 4
             left_action_items: [["menu", lambda x: nav_drawer.set_state("toggle")]]
             right_action_items: [["plus", lambda x: root.show_add_note_popup()], ["logout", lambda x: root.change_screen("login_screen")]]
-            md_bg_color: app.theme_cls.primary_color  # Use primary color for the header
-            specific_text_color: 1, 1, 1, 1  # White text color
+            md_bg_color: app.theme_cls.primary_color
+            specific_text_color: 1, 1, 1, 1
 
         # Main Content
         ScrollView:
@@ -30,18 +30,64 @@ ScreenManager:
         id: nav_drawer
         BoxLayout:
             orientation: "vertical"
-            spacing: dp(20)
-            padding: dp(20)
+            spacing: dp(10)
+            padding: dp(10)
+            size_hint_y: None
+            height: self.minimum_height
 
             MDLabel:
                 text: "Menu"
                 font_style: "H5"
+                size_hint_y: None
+                height: dp(50)
+                padding: [dp(10), dp(10)]
 
-            MDRectangleFlatButton:
-                text: "Logout"
-                on_release: app.root.current = "login_screen"
+            MDBoxLayout:
+                orientation: "vertical"
+                spacing: dp(5)
+                padding: dp(5)
+                size_hint_y: None
+                height: self.minimum_height
 
+                MDRectangleFlatButton:
+                    text: "Chatbot"
+                    on_release: root.nav_to_chatbot()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
 
+                MDRectangleFlatButton:
+                    text: "Files"
+                    on_release: root.nav_to_files()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "OCR"
+                    on_release: root.nav_to_ocr()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "Logout"
+                    on_release: app.root.current = "login_screen"
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
 
 <AdminHomeScreen>:
     md_bg_color: 0.95, 0.95, 0.95, 1
@@ -56,8 +102,8 @@ ScreenManager:
             elevation: 4
             left_action_items: [["menu", lambda x: nav_drawer.set_state("toggle")]]
             right_action_items: [["logout", lambda x: root.go_back()]]
-            md_bg_color: app.theme_cls.primary_color  
-            specific_text_color: 1, 1, 1, 1 
+            md_bg_color: app.theme_cls.primary_color
+            specific_text_color: 1, 1, 1, 1
 
         # Main Content
         ScrollView:
@@ -68,13 +114,61 @@ ScreenManager:
         id: nav_drawer
         BoxLayout:
             orientation: "vertical"
-            spacing: dp(20)
-            padding: dp(20)
+            spacing: dp(10)
+            padding: dp(10)
+            size_hint_y: None
+            height: self.minimum_height
 
             MDLabel:
                 text: "Menu"
                 font_style: "H5"
+                size_hint_y: None
+                height: dp(50)
+                padding: [dp(10), dp(10)]
 
-            MDRectangleFlatButton:
-                text: "Logout"
-                on_release: app.root.current = "login_screen"
+            MDBoxLayout:
+                orientation: "vertical"
+                spacing: dp(5)
+                padding: dp(5)
+                size_hint_y: None
+                height: self.minimum_height
+
+                MDRectangleFlatButton:
+                    text: "Chatbot"
+                    on_release: root.nav_to_chatbot()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "Files"
+                    on_release: root.nav_to_files()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "OCR"
+                    on_release: root.nav_to_ocr()
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
+
+                MDRectangleFlatButton:
+                    text: "Logout"
+                    on_release: app.root.current = "login_screen"
+                    size_hint_y: None
+                    height: dp(48)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                    line_color: app.theme_cls.primary_color
+                    md_bg_color: (1, 1, 1, 1) if self.state == 'normal' else (0.9, 0.9, 0.9, 1)
