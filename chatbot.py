@@ -3,6 +3,9 @@ from kivy.uix.screenmanager import Screen
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.core.window import Window
+from kivy.network.urlrequest import UrlRequest
+import json
+from kivymd.toast import toast
 from kivymd.uix.filemanager import MDFileManager
 import os
 
@@ -21,6 +24,7 @@ class FileBubble(Screen):
 class ChatScreen(Screen):
     file_manager = ObjectProperty(None)
     selected_file = StringProperty("")
+    API_URL = "http://localhost:7000"  # Your Flask API base URL
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -31,11 +35,11 @@ class ChatScreen(Screen):
             preview=True,
             ext=[".pdf", ".txt", ".docx", ".jpg", ".png", ".jpeg", ".csv"]
         )
-        self.message_callback = None
+        self.add_welcome_message()
 
-    def set_message_callback(self, callback):
-        """Set callback for outgoing messages"""
-        self.message_callback = callback
+    def add_welcome_message(self):
+        """Add welcome message"""
+        self.add_message("Hello! I'm your AI assistant. How can I help you today?", "AI Assistant", True)
 
     def add_message(self, message, sender, is_bot=False):
         """Add a message to the chat"""
@@ -47,6 +51,7 @@ class ChatScreen(Screen):
     def add_file_message(self, file_path):
         """Add a file message to the chat"""
         if not os.path.exists(file_path):
+            toast("File not found!")
             return
 
         file_name = os.path.basename(file_path)
@@ -63,6 +68,9 @@ class ChatScreen(Screen):
         )
         chat_list.add_widget(file_bubble)
         Clock.schedule_once(lambda dt: self.scroll_to_bottom(), 0.1)
+        
+        # Upload file to API
+        self.upload_file_to_api(file_path)
 
     def _get_file_size(self, file_path):
         """Return human-readable file size"""
@@ -96,8 +104,53 @@ class ChatScreen(Screen):
         message = self.ids.message_input.text.strip()
         if message:
             self.ids.message_input.text = ""
-            if self.message_callback:
-                self.message_callback(message, False)
+            self.add_message(message, "You", False)
+            self.send_to_rag_api(message)
+
+    def send_to_rag_api(self, message):
+        """Send message to RAG API"""
+        url = f"{self.API_URL}/chat"
+        headers = {'Content-Type': 'application/json'}
+        payload = json.dumps({"message": message})
+        
+        UrlRequest(
+            url,
+            on_success=self.handle_api_response,
+            on_failure=self.handle_api_error,
+            req_body=payload,
+            req_headers=headers
+        )
+
+    def upload_file_to_api(self, file_path):
+        """Upload file to API"""
+        url = f"{self.API_URL}/upload"
+        
+        with open(file_path, 'rb') as f:
+            files = {'file': (os.path.basename(file_path), f)}
+            UrlRequest(
+                url,
+                on_success=self.handle_upload_success,
+                on_failure=self.handle_upload_error,
+                files=files
+            )
+
+    def handle_api_response(self, request, result):
+        """Handle successful API response"""
+        response = result.get('response', 'No response from API')
+        self.add_message(response, "AI Assistant", True)
+
+    def handle_api_error(self, request, error):
+        """Handle API errors"""
+        error_msg = f"Error getting response: {error}"
+        self.add_message(error_msg, "System", True)
+
+    def handle_upload_success(self, request, result):
+        """Handle successful file upload"""
+        toast("File uploaded successfully!")
+
+    def handle_upload_error(self, request, error):
+        """Handle file upload errors"""
+        toast(f"Upload failed: {error}")
 
     def scroll_to_bottom(self):
         """Scroll chat to the bottom"""
