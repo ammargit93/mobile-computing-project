@@ -6,8 +6,9 @@ class SessionManager:
     def __init__(self, session_file='session.json'):
         self.session_file = session_file
 
-    def create_session(self, username, user_type):
+    def create_session(self, username, user_type, user_id):
         session_data = {
+            'user_id': user_id,
             'username': username,
             'user_type': user_type,
             'expires_at': (datetime.now() + timedelta(days=1)).isoformat()  # Session expires in 1 day

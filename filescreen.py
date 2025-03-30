@@ -17,27 +17,31 @@ import uuid
 from datetime import datetime
 from config import files_collection
 import os
+import shutil
 
 UPLOAD_FOLDER = "uploads"
 
-def save_file_locally(file_data, user_id):
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    file_ext = os.path.splitext(file_data.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-    file_data.save(file_path)
+def save_file_locally(file_path, user_id, original_filename):
+    """Save file information to database with both original and unique filenames"""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+    
+    file_size = os.path.getsize(file_path)
+    unique_filename = os.path.basename(file_path)
+    file_type = os.path.splitext(unique_filename)[1][1:].lower() or "file"
+    
     files_collection.insert_one({
         "user_id": user_id,
-        "filename": file_data.filename,
+        "original_filename": original_filename,
+        "unique_filename": unique_filename,
         "filepath": file_path,
-        "size": os.path.getsize(file_path),
-        "uploaded_at": datetime.now()
+        "size": file_size,
+        "uploaded_at": datetime.now(),
+        "type": file_type,
+        "description": ""  # Initialize description field
     })
     
     return file_path
-
-
 
 class FileUploadContent(MDBoxLayout):
     """Content for file upload dialog"""
@@ -67,27 +71,24 @@ class FileChooserContent(MDBoxLayout):
     """Content for file chooser dialog with proper styling"""
     def __init__(self, screen_instance, **kwargs):
         super().__init__(**kwargs)
-        self.screen = screen_instance  # Store reference to parent screen
+        self.screen = screen_instance
         self.orientation = "vertical"
         self.spacing = dp(10)
         self.padding = dp(10)
         self.size_hint_y = None
         self.height = dp(400)
         
-        # Create styled file chooser
         self.file_chooser = FileChooserListView(
             size_hint=(1, 1),
-            path=os.path.expanduser("~"),  # Start at user home directory
-            filters=['*'],  # Show all files
+            path=os.path.expanduser("~"),
+            filters=['*'],
         )
         
-        # Apply styling to file chooser
-        self.file_chooser.background_color = get_color_from_hex("#333333")  # Dark background
-        self.file_chooser.color = get_color_from_hex("#FFFFFF")  # White text
-        self.file_chooser.selection_color = get_color_from_hex("#4CAF50")  # Green selection
+        self.file_chooser.background_color = get_color_from_hex("#333333")
+        self.file_chooser.color = get_color_from_hex("#FFFFFF")
+        self.file_chooser.selection_color = get_color_from_hex("#4CAF50")
         self.file_chooser.border = [10, 10, 10, 10]
         
-        # Button box
         button_box = MDBoxLayout(
             size_hint_y=None,
             height=dp(50),
@@ -104,7 +105,6 @@ class FileChooserContent(MDBoxLayout):
             md_bg_color=get_color_from_hex("#4CAF50")
         )
         
-        # Bind buttons to screen methods directly
         cancel_btn.bind(on_release=self.screen.dismiss_file_chooser)
         select_btn.bind(on_release=self.screen.use_selected_file)
         
@@ -114,7 +114,6 @@ class FileChooserContent(MDBoxLayout):
         self.add_widget(self.file_chooser)
         self.add_widget(button_box)
         
-        # Bind selection to update screen's selected_file
         self.file_chooser.bind(selection=lambda instance, value: 
                              setattr(self.screen, 'selected_file', value[0] if value else ""))
 
@@ -130,26 +129,37 @@ class FilesScreen(Screen):
         self.selected_file = ""
 
     def on_enter(self):
-        """Load files when screen is entered"""
         Clock.schedule_once(self._load_files)
 
     def _load_files(self, dt):
-        """Load files from database"""
         if hasattr(self.ids, 'files_list'):
             self.ids.files_list.clear_widgets()
             session_data = MDApp.get_running_app().session_manager.get_session()
-            username = session_data.get("username", "Guest") if session_data else "Guest"
+            user_id = session_data.get("user_id", None) if session_data else None
             
-            user_files = files_collection.find({"user": username})
+            if not user_id:
+                self.show_snackbar("Not logged in")
+                return
+                
+            user_files = files_collection.find({"user_id": user_id}).sort("uploaded_at", -1)
+            self.files = []
             
             for file in user_files:
+                file_size = self._format_size(file.get("size", 0))
+                file_type = file.get("type", "file")
+                description = file.get("description", "")
+                
+                secondary_text = f"Size: {file_size} | Type: {file_type}"
+                if description:
+                    secondary_text += f"\n{description}"
+                
                 item = TwoLineAvatarListItem(
-                    text=file.get("name", "Untitled"),
-                    secondary_text=f"Size: {file.get('size', '0')} | Type: {file.get('type', 'file')}",
+                    text=file.get("original_filename", "Untitled"),
+                    secondary_text=secondary_text,
                     on_release=lambda x, f=file: self.open_file(f)
                 )
                 icon = IconLeftWidget(
-                    icon=self._get_file_icon(file.get("type", "")),
+                    icon=self._get_file_icon(file_type),
                     theme_text_color="Custom",
                     text_color=MDApp.get_running_app().theme_cls.primary_color
                 )
@@ -157,133 +167,181 @@ class FilesScreen(Screen):
                 self.ids.files_list.add_widget(item)
                 self.files.append(file)
 
+    def _format_size(self, size):
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f}{unit}"
+            size /= 1024.0
+        return f"{size:.1f}TB"
+
     def _get_file_icon(self, file_type):
-        """Return appropriate icon based on file type"""
         file_type = file_type.lower()
-        if "pdf" in file_type:
+        if file_type == "pdf":
             return "file-pdf-box"
-        elif "image" in file_type:
+        elif file_type in ["jpg", "jpeg", "png", "gif", "bmp"]:
             return "file-image"
-        elif "word" in file_type:
+        elif file_type in ["doc", "docx"]:
             return "file-word"
-        elif "excel" in file_type:
+        elif file_type in ["xls", "xlsx"]:
             return "file-excel"
-        elif "powerpoint" in file_type:
+        elif file_type in ["ppt", "pptx"]:
             return "file-powerpoint"
-        elif "video" in file_type:
+        elif file_type in ["mp4", "avi", "mov", "mkv"]:
             return "file-video"
-        elif "audio" in file_type:
+        elif file_type in ["mp3", "wav", "ogg"]:
             return "file-music"
         else:
             return "file"
 
     def show_file_chooser(self):
-        """Show styled file chooser dialog"""
-        content = FileChooserContent(screen_instance=self)  # Pass self as screen_instance
-        
+        content = FileChooserContent(screen_instance=self)  
         self.file_dialog = MDDialog(
             title="[color=ffffff]Select File to Upload[/color]",
             type="custom",
             content_cls=content,
             size_hint=(0.9, 0.7),
-            md_bg_color=get_color_from_hex("#333333"),  # Dark dialog background
+            md_bg_color=get_color_from_hex("#333333"),
             radius=[20, 20, 20, 20]
         )
-        
-        # Set text color for dialog title
-        self.file_dialog.title_color = get_color_from_hex("#FFFFFF")
         self.file_dialog.open()
 
     def use_selected_file(self, *args):
-        """Use the selected file"""
         if self.selected_file:
-            file_name = os.path.basename(self.selected_file)
-            self.show_snackbar(f"Selected file: {file_name}")
+            original_name = os.path.basename(self.selected_file)
             self.dismiss_file_chooser()
-            self.show_upload_dialog(file_name)
+            self.show_upload_dialog(original_name)
 
     def dismiss_file_chooser(self, *args):
-        """Close file chooser dialog"""
         if self.file_dialog:
             self.file_dialog.dismiss()
 
     def show_upload_dialog(self, file_name=""):
-        """Show dialog for uploading new file"""
-        if not self.upload_dialog:
-            content = FileUploadContent()
-            if file_name:
-                content.file_name.text = file_name
-                
-            self.upload_dialog = MDDialog(
-                title="Upload File",
-                type="custom",
-                content_cls=content,
-                buttons=[
-                    MDFlatButton(text="CANCEL", on_release=self.dismiss_upload_dialog),
-                    MDRaisedButton(text="UPLOAD", on_release=self.process_upload),
-                ],
-                size_hint=(0.8, None),
-            )
+        content = FileUploadContent()
+        if file_name:
+            content.file_name.text = file_name
+            
+        self.upload_dialog = MDDialog(
+            title="Upload File",
+            type="custom",
+            content_cls=content,
+            buttons=[
+                MDFlatButton(text="CANCEL", on_release=self.dismiss_upload_dialog),
+                MDRaisedButton(text="UPLOAD", on_release=self.process_upload),
+            ],
+            size_hint=(0.8, None),
+        )
         self.upload_dialog.open()
 
     def process_upload(self, *args):
-        """Handle file upload process"""
         content = self.upload_dialog.content_cls
-        file_name = content.file_name.text.strip()
+        original_filename = content.file_name.text.strip()
         description = content.file_desc.text.strip()
         
-        if file_name:
-            session_data = MDApp.get_running_app().session_manager.get_session()
-            username = session_data.get("username", "Guest") if session_data else "Guest"
+        if not original_filename:
+            self.show_snackbar("File name cannot be empty")
+            return
             
+        if not self.selected_file:
+            self.show_snackbar("No file selected")
+            return
+            
+        session_data = MDApp.get_running_app().session_manager.get_session()
+        user_id = session_data.get("user_id", None) if session_data else None
+        
+        if not user_id:
+            self.show_snackbar("Not logged in")
+            return
+            
+        try:
+            if not os.path.exists(UPLOAD_FOLDER):
+                os.makedirs(UPLOAD_FOLDER)
+                
+            file_ext = os.path.splitext(self.selected_file)[1]
+            unique_filename = f"{uuid.uuid4()}{file_ext}"
+            dest_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+            
+            shutil.copy2(self.selected_file, dest_path)
+            
+            # Update the document with description
             files_collection.insert_one({
-                "name": file_name,
-                "description": description,
-                "user": username,
-                "size": "0KB",
-                "type": "file"
+                "user_id": user_id,
+                "original_filename": original_filename,
+                "unique_filename": unique_filename,
+                "filepath": dest_path,
+                "size": os.path.getsize(dest_path),
+                "uploaded_at": datetime.now(),
+                "type": file_ext[1:].lower() or "file",
+                "description": description
             })
             
             self._load_files(0)
-            self.show_snackbar(f"File '{file_name}' added successfully!")
-            
-        self.dismiss_upload_dialog()
+            self.show_snackbar(f"File '{original_filename}' uploaded successfully!")
+            self.dismiss_upload_dialog()
+        except Exception as e:
+            self.show_snackbar(f"Upload failed: {str(e)}")
 
     def dismiss_upload_dialog(self, *args):
-        """Close the upload dialog"""
         if self.upload_dialog:
             self.upload_dialog.dismiss()
+            self.upload_dialog = None
+            self.selected_file = ""
 
     def open_file(self, file_data):
-        """Handle opening/viewing a file"""
+        file_size = self._format_size(file_data.get("size", 0))
+        file_type = file_data.get("type", "file")
+        description = file_data.get("description", "No description")
+        
+        text = [
+            f"Original Name: {file_data.get('original_filename', 'Unknown')}",
+            f"Stored As: {file_data.get('unique_filename', 'Unknown')}",
+            f"Type: {file_type}",
+            f"Size: {file_size}",
+            f"Uploaded: {file_data.get('uploaded_at', 'Unknown')}",
+            f"Path: {file_data.get('filepath', 'Unknown')}",
+            f"\nDescription: {description}"
+        ]
+        
         dialog = MDDialog(
-            title=file_data.get("name", "File"),
-            text=f"Type: {file_data.get('type', 'Unknown')}\n"
-                 f"Size: {file_data.get('size', '0')}\n"
-                 f"Description: {file_data.get('description', 'None')}",
+            title=file_data.get("original_filename", "File"),
+            text="\n".join(text),
             buttons=[
-                MDFlatButton(text="CLOSE", on_release=lambda x: dialog.dismiss())
+                MDFlatButton(text="CLOSE", on_release=lambda x: dialog.dismiss()),
+                MDFlatButton(text="OPEN", on_release=lambda x: self._open_file_externally(file_data))
             ],
             size_hint=(0.8, None),
         )
         dialog.open()
 
+    def _open_file_externally(self, file_data):
+        """Open file using system default application"""
+        try:
+            filepath = file_data.get("filepath")
+            if filepath and os.path.exists(filepath):
+                import platform
+                if platform.system() == 'Windows':
+                    os.startfile(filepath)
+                elif platform.system() == 'Darwin':
+                    os.system(f'open "{filepath}"')
+                else:
+                    os.system(f'xdg-open "{filepath}"')
+            else:
+                self.show_snackbar("File not found")
+        except Exception as e:
+            self.show_snackbar(f"Could not open file: {str(e)}")
+
     def refresh_files(self):
-        """Refresh the files list"""
         self._load_files(0)
 
     def show_snackbar(self, message):
-        """Show visible snackbar notification"""
-        snackbar = MDSnackbar(
+        MDSnackbar(
             MDLabel(
                 text=message,
                 theme_text_color="Custom",
-                text_color=get_color_from_hex("#FFFFFF")  # White text
+                text_color=get_color_from_hex("#FFFFFF")
             ),
             y=dp(24),
             pos_hint={"center_x": 0.5},
             size_hint_x=0.9,
-            md_bg_color=get_color_from_hex("#333333"),  # Dark background
+            md_bg_color=get_color_from_hex("#333333"),
             radius=[10, 10, 10, 10]
-        )
-        snackbar.open()
+        ).open()

@@ -161,8 +161,8 @@ class OTPScreen(Screen):
             if user:
                 username = user['full_name']
                 user_type = user['user_type']
-                
-                MDApp.get_running_app().session_manager.create_session(username, user_type)
+                user_id = str(user['_id'])
+                MDApp.get_running_app().session_manager.create_session(username, user_type, user_id)
                 self.show_snackbar("OTP Verified. Login Successful!", "green")
                 if user_type == "Admin":
                     self.manager.current = "admin_home"

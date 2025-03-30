@@ -72,8 +72,8 @@ class GuestHomeScreen(Screen):
         if hasattr(self.ids, 'notes_list'):
             self.ids.notes_list.clear_widgets()  
             session_data = MDApp.get_running_app().session_manager.get_session()
-            username = session_data.get("username", "Guest") if session_data else "Guest"
-            user_notes = notes_collection.find({"user": username})
+            user_id = session_data.get("user_id", None) if session_data else "Guest"
+            user_notes = notes_collection.find({"user_id": user_id})
             for note in user_notes:
                 title = note.get("title", "")
                 description = note.get("description", "")
@@ -107,11 +107,11 @@ class GuestHomeScreen(Screen):
                 on_release=lambda x, t=title, d=description: self.show_note_details(t, d))
             self.ids.notes_list.add_widget(note_item)
             session_data = MDApp.get_running_app().session_manager.get_session()
-            username = session_data.get("username", "Guest") if session_data else "Guest"
+            user_id = session_data.get("user_id", None) if session_data else "Guest"
             notes_collection.insert_one({
                 "title": title, 
                 "description": description, 
-                "user": username})
+                "user_id": user_id})
         self.dismiss_popup()
 
     def show_note_details(self, title, description):
