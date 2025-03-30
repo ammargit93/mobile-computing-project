@@ -9,6 +9,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from session import SessionManager
 from homescreen import GuestHomeScreen, AdminHomeScreen
 from filescreen import FilesScreen
+from chatbot import ChatScreen, ChatMessage
 import requests
 from kivymd.app import MDApp 
 import pyotp
@@ -198,6 +199,7 @@ class AuthApp(MDApp):
         Builder.load_file("UI/authapp.kv")  
         Builder.load_file("UI/homepage.kv")   
         Builder.load_file("UI/files.kv")   
+        Builder.load_file("UI/chatbot.kv")   
 
         sm = ScreenManager()
         sm.add_widget(LoginScreen(name="login_screen"))
@@ -206,6 +208,8 @@ class AuthApp(MDApp):
         sm.add_widget(GuestHomeScreen(name="guest_home"))
         sm.add_widget(AdminHomeScreen(name="admin_home"))
         sm.add_widget(FilesScreen(name="files_screen"))
+        sm.add_widget(ChatScreen(name="chatbot_screen"))
+
         session = self.session_manager.get_session()
         print(session)
         if session:
