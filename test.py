@@ -1,45 +1,38 @@
-from flask import Flask, request, jsonify
-import requests
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from pyzbar.pyzbar import decode
+from PIL import Image
 
-app = Flask(__name__)
-API_KEY = "AIzaSyBUd2d1aAaYBSsQpLy48SMszol90MmLlVk"
+class QRFromFile(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', **kwargs)
+        
+        self.label = Label(text="Click to scan QR from image", size_hint_y=0.2)
+        self.add_widget(self.label)
 
-@app.route("/send_otp", methods=["POST"])
-def send_otp():
-    phone_number = request.json.get("phone_number")
-    print(phone_number)
-    if not phone_number:
-        return jsonify({"error": "Phone number is required"}), 400
+        self.button = Button(text="Scan QR Code from File")
+        self.button.bind(on_press=self.scan_qr_from_file)
+        self.add_widget(self.button)
 
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key={API_KEY}"
-    data = {"phoneNumber": phone_number}
+    def scan_qr_from_file(self, instance):
+        try:
+            path = "dummy.png"
+            image = Image.open(path)
+            result = decode(image)
 
-    response = requests.post(url, json=data)
-    result = response.json()
-    print(result)
-    if "sessionInfo" in result:
-        return jsonify({"session_info": result["sessionInfo"]})  # Return session info for verification
-    else:
-        return jsonify({"error": "Failed to send OTP", "details": result}), 400
+            if result:
+                qr_data = result[0].data.decode('utf-8')
+                self.label.text = f"Scanned Data:\n{qr_data}"
+            else:
+                self.label.text = "No QR code found in image."
+        except Exception as e:
+            self.label.text = f"Error: {e}"
 
-@app.route("/verify_otp", methods=["POST"])
-def verify_otp():
-    session_info = request.json.get("session_info")
-    otp_code = request.json.get("otp_code")
+class QRApp(App):
+    def build(self):
+        return QRFromFile()
 
-    if not session_info or not otp_code:
-        return jsonify({"error": "Session info and OTP code are required"}), 400
-
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key={API_KEY}"
-    data = {"sessionInfo": session_info, "code": otp_code}
-
-    response = requests.post(url, json=data)
-    result = response.json()
-
-    if "idToken" in result:
-        return jsonify({"success": True, "idToken": result["idToken"]})  # Successfully verified
-    else:
-        return jsonify({"error": "OTP verification failed", "details": result}), 400
-
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    QRApp().run()

@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request, jsonify
-from langchain_groq.chat_models import ChatGroq  # Changed to use Groq
+from langchain_groq.chat_models import ChatGroq 
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyMuPDFLoader, TextLoader, Docx2txtLoader

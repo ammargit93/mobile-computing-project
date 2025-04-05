@@ -15,32 +15,19 @@ from kivy.clock import Clock
 from kivymd.app import MDApp
 import uuid
 from datetime import datetime
-from config import files_collection
+from config import images_collection  
 import os
 import shutil
+import cv2
+from pyzbar.pyzbar import decode
+from kivy.uix.behaviors import ButtonBehavior
+import webbrowser
 
 UPLOAD_FOLDER = "uploads"
 
-def save_file_locally(file_path, user_id, original_filename):
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-    
-    file_size = os.path.getsize(file_path)
-    unique_filename = os.path.basename(file_path)
-    file_type = os.path.splitext(unique_filename)[1][1:].lower() or "file"
-    
-    files_collection.insert_one({
-        "user_id": user_id,
-        "original_filename": original_filename,
-        "unique_filename": unique_filename,
-        "filepath": file_path,
-        "size": file_size,
-        "uploaded_at": datetime.now(),
-        "type": file_type,
-        "description": "" 
-    })
-    return file_path
-
+class ClickableMDLabel(ButtonBehavior, MDLabel):
+    """A clickable MDLabel that can handle links"""
+    pass
 
 class FileUploadContent(MDBoxLayout):
     """Content for file upload dialog"""
@@ -53,7 +40,7 @@ class FileUploadContent(MDBoxLayout):
         self.height = dp(150)
         
         self.file_name = MDTextField(
-            hint_text="File Name",
+            hint_text="Image Name",
             mode="rectangle",
             size_hint_y=None,
             height=dp(48))
@@ -80,7 +67,7 @@ class FileChooserContent(MDBoxLayout):
         self.file_chooser = FileChooserListView(
             size_hint=(1, 1),
             path=os.path.expanduser("~"),
-            filters=['*'],
+            filters=['*.png', '*.jpg', '*.jpeg', '*.pdf', '*.bmp'],
         )
         
         self.file_chooser.background_color = get_color_from_hex("#333333")
@@ -116,7 +103,61 @@ class FileChooserContent(MDBoxLayout):
         self.file_chooser.bind(selection=lambda instance, value: 
                              setattr(self.screen, 'selected_file', value[0] if value else ""))
 
-class FilesScreen(Screen):
+class QRScannerContent(MDBoxLayout):
+    """Improved QR code scanner dialog content with proper spacing"""
+    def __init__(self, qr_data, **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = "vertical"
+        self.spacing = dp(15)
+        self.padding = [dp(20), dp(10), dp(20), dp(20)]
+        self.size_hint_y = None
+        self.height = dp(180)
+        
+        # Title with proper spacing
+        title_label = MDLabel(
+            text="QR Code Content:",
+            halign="center",
+            font_style="H6",
+            size_hint_y=None,
+            height=dp(40),
+            padding=[0, dp(10)]
+        )
+        self.add_widget(title_label)
+        
+        # Main content area with scrollable text if needed
+        content_box = MDBoxLayout(
+            orientation="vertical",
+            spacing=dp(10),
+            size_hint_y=None,
+            height=dp(100)
+        )
+        
+        # Create a properly styled clickable label
+        self.link_label = ClickableMDLabel(
+            text=qr_data,
+            halign="center",
+            markup=True,
+            theme_text_color="Custom",
+            text_color=get_color_from_hex("#2196F3"),
+            font_style="Subtitle1",
+            size_hint_y=None,
+            height=dp(48),
+            padding=[dp(10), 0]
+        )
+        self.link_label.bind(on_release=lambda x: self.open_link(qr_data))
+        content_box.add_widget(self.link_label)
+        
+        self.add_widget(content_box)
+        
+    def open_link(self, url):
+        try:
+            if not url.startswith(('http://', 'https://')):
+                url = 'http://' + url
+            webbrowser.open(url)
+        except Exception as e:
+            MDApp.get_running_app().show_snackbar(f"Could not open link: {str(e)}")
+
+class OCRScreen(Screen):
     files = ListProperty([])
     selected_file = StringProperty("")
     
@@ -125,7 +166,9 @@ class FilesScreen(Screen):
         self.files = []
         self.upload_dialog = None
         self.file_dialog = None
+        self.qr_dialog = None
         self.selected_file = ""
+        self.qr_mode = False
 
     def on_enter(self):
         Clock.schedule_once(self._load_files)
@@ -140,7 +183,7 @@ class FilesScreen(Screen):
                 self.show_snackbar("Not logged in")
                 return
                 
-            user_files = files_collection.find({"user_id": user_id}).sort("uploaded_at", -1)
+            user_files = images_collection.find({"user_id": user_id}).sort("uploaded_at", -1)
             self.files = []
             
             for file in user_files:
@@ -175,27 +218,19 @@ class FilesScreen(Screen):
 
     def _get_file_icon(self, file_type):
         file_type = file_type.lower()
-        if file_type == "pdf":
-            return "file-pdf-box"
-        elif file_type in ["jpg", "jpeg", "png", "gif", "bmp"]:
+        if file_type in ["jpg", "jpeg", "png", "gif", "bmp"]:
             return "file-image"
-        elif file_type in ["doc", "docx"]:
-            return "file-word"
-        elif file_type in ["xls", "xlsx"]:
-            return "file-excel"
-        elif file_type in ["ppt", "pptx"]:
-            return "file-powerpoint"
-        elif file_type in ["mp4", "avi", "mov", "mkv"]:
-            return "file-video"
-        elif file_type in ["mp3", "wav", "ogg"]:
-            return "file-music"
+        elif file_type == "pdf":
+            return "file-pdf"
         else:
             return "file"
 
-    def show_file_chooser(self):
+    def show_file_chooser(self, qr_mode=False):
+        self.qr_mode = qr_mode
+        title = "Select QR Code Image" if qr_mode else "Select File to Upload"
         content = FileChooserContent(screen_instance=self)  
         self.file_dialog = MDDialog(
-            title="[color=ffffff]Select File to Upload[/color]",
+            title=f"[color=ffffff]{title}[/color]",
             type="custom",
             content_cls=content,
             size_hint=(0.9, 0.7),
@@ -206,13 +241,18 @@ class FilesScreen(Screen):
 
     def use_selected_file(self, *args):
         if self.selected_file:
-            original_name = os.path.basename(self.selected_file)
-            self.dismiss_file_chooser()
-            self.show_upload_dialog(original_name)
+            if self.qr_mode:
+                self.scan_qr_code(self.selected_file)
+                self.dismiss_file_chooser()
+            else:
+                original_name = os.path.basename(self.selected_file)
+                self.dismiss_file_chooser()
+                self.show_upload_dialog(original_name)
 
     def dismiss_file_chooser(self, *args):
         if self.file_dialog:
             self.file_dialog.dismiss()
+            self.qr_mode = False
 
     def show_upload_dialog(self, file_name=""):
         content = FileUploadContent()
@@ -220,7 +260,7 @@ class FilesScreen(Screen):
             content.file_name.text = file_name
             
         self.upload_dialog = MDDialog(
-            title="Upload File",
+            title="Upload Image",
             type="custom",
             content_cls=content,
             buttons=[
@@ -237,11 +277,11 @@ class FilesScreen(Screen):
         description = content.file_desc.text.strip()
         
         if not original_filename:
-            self.show_snackbar("File name cannot be empty")
+            self.show_snackbar("Image name cannot be empty")
             return
             
         if not self.selected_file:
-            self.show_snackbar("No file selected")
+            self.show_snackbar("No Image selected")
             return
             
         session_data = MDApp.get_running_app().session_manager.get_session()
@@ -261,8 +301,7 @@ class FilesScreen(Screen):
             
             shutil.copy2(self.selected_file, dest_path)
             
-            # Update the document with description
-            files_collection.insert_one({
+            images_collection.insert_one({
                 "user_id": user_id,
                 "original_filename": original_filename,
                 "unique_filename": unique_filename,
@@ -305,14 +344,56 @@ class FilesScreen(Screen):
             text="\n".join(text),
             buttons=[
                 MDFlatButton(text="CLOSE", on_release=lambda x: dialog.dismiss()),
-                MDFlatButton(text="OPEN", on_release=lambda x: self._open_file_externally(file_data))
+                MDFlatButton(text="OPEN", on_release=lambda x: self._open_file_externally(file_data)),
+                MDFlatButton(text="SCAN QR", on_release=lambda x: self.show_file_chooser(qr_mode=True))
             ],
             size_hint=(0.8, None),
         )
         dialog.open()
 
+    def scan_qr_code(self, image_path):
+        try:
+            img = cv2.imread(image_path)
+            
+            if img is None:
+                self.show_snackbar("Could not read the image file")
+                return
+                
+            decoded_objects = decode(img)
+            
+            if not decoded_objects:
+                self.show_snackbar("No QR code found in the image")
+                return
+                
+            qr_data = decoded_objects[0].data.decode("utf-8")
+            self.show_qr_result(qr_data)
+            
+        except Exception as e:
+            self.show_snackbar(f"QR scanning failed: {str(e)}")
+
+    def show_qr_result(self, qr_data):
+        """Improved QR result dialog with proper spacing"""
+        self.qr_dialog = MDDialog(
+            title="[size=20]QR Code Scan Result[/size]",
+            type="custom",
+            content_cls=QRScannerContent(qr_data=qr_data),
+            buttons=[
+                MDFlatButton(
+                    text="CLOSE", 
+                    on_release=lambda x: self.qr_dialog.dismiss(),
+                    theme_text_color="Custom",
+                    text_color=get_color_from_hex("#FFFFFF")
+                )
+            ],
+            size_hint=(0.85, None),
+            height=dp(280),
+            md_bg_color=get_color_from_hex("#333333"),
+            radius=[20, 20, 20, 20],
+            overlay_color=(0, 0, 0, 0.7)
+        )
+        self.qr_dialog.open()
+
     def _open_file_externally(self, file_data):
-        """Open file using system default application"""
         try:
             filepath = file_data.get("filepath")
             if filepath and os.path.exists(filepath):
@@ -327,6 +408,12 @@ class FilesScreen(Screen):
                 self.show_snackbar("File not found")
         except Exception as e:
             self.show_snackbar(f"Could not open file: {str(e)}")
+
+    def nav_to_chatbot(self):
+        self.manager.current = "chatbot_screen"
+
+    def nav_to_ocr(self):
+        self.manager.current = "ocr_screen"
 
     def refresh_files(self):
         self._load_files(0)

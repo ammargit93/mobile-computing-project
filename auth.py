@@ -9,37 +9,27 @@ from kivymd.uix.menu import MDDropdownMenu
 from session import SessionManager
 from homescreen import GuestHomeScreen, AdminHomeScreen
 from filescreen import FilesScreen
-from chatbot import ChatScreen, ChatMessage
-import requests
-from kivymd.app import MDApp 
+from chatbot import ChatbotScreen
+from ocr import OCRScreen
 import pyotp
 from dotenv import load_dotenv
+from config import notes_collection, users_collection
 import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-
 load_dotenv()
-
 
 email_address = os.getenv("EMAIL")
 email_password = os.getenv("PASSWORD")
-client = MongoClient("mongodb://localhost:27017/")
-db = client["appDB"]
-users_collection = db["users"]
-notes_collection = db["notes"]
-user_secret_key = pyotp.random_base32()
-# api call.
-def send_otp(phone_number):
-    url = "http://127.0.0.1:5000/send_otp"
-    response = requests.post(url, json={"phone_number": phone_number})
-    return response.json()
+# client = MongoClient("mongodb://localhost:27017/")
+# db = client["appDB"]
+# users_collection = db["users"]
+# notes_collection = db["notes"]
 
-def verify_otp(session_info, otp_code):
-    url = "http://127.0.0.1:5000/verify_otp"
-    response = requests.post(url, json={"session_info": session_info, "otp_code": otp_code})
-    return response.json()
+phone_num = None
+gotp = None
 
 def send_email(to_email, subject, body):
     msg = MIMEMultipart()
@@ -53,67 +43,55 @@ def send_email(to_email, subject, body):
             server.starttls()
             server.login(email_address, email_password)
             server.sendmail(email_address, to_email, msg.as_string())
-        print("Email sent successfully!")
     except Exception as e:
         print(f"Failed to send email: {e}")
-
-
-
-phone_num = None
-gotp = None
-
 
 class LoginScreen(Screen):
     def go_to_otp(self):
         phone_number = self.ids.phone_number.text.strip()
-        print(f"""Phone number: {phone_number}\n\n\n""")
         global phone_num
         phone_num = str(phone_number[3:])
         user = users_collection.find_one({"phone_number": phone_num})
-        print(f"""Phone number: {phone_num}\n\n\n""")
+        
+        if not user:
+            self.show_snackbar("User not found. Please sign up first.", "red")
+            return
+            
         if phone_number:
-            response = send_otp(phone_number)
-            if "session_info" in response:
-                self.manager.get_screen("otp_screen").session_info = response["session_info"]
-                
-                self.secret_key = pyotp.random_base32()  # Generate a secret key
-                self.totp = pyotp.TOTP(self.secret_key)
-                self.otp = self.totp.now()  
-                global gotp
-                gotp = self.otp
-                email = user['email']
-                send_email(email, "OTP Mail", f"Your OTP is {gotp}")
-                self.show_snackbar(f"OTP Sent Successfully!, Check your mail!", "green")
-                self.manager.current = "otp_screen"
-            else:
-                self.show_snackbar("Failed to send OTP.", "red")
+            self.secret_key = pyotp.random_base32()
+            self.totp = pyotp.TOTP(self.secret_key)
+            global gotp
+            gotp = self.totp.now()
+            email = user['email']
+            send_email(email, "OTP Mail", f"Your OTP is {gotp}")
+            self.show_snackbar("OTP Sent Successfully! Check your mail!", "green")
+            self.manager.current = "otp_screen"
         else:
             self.show_snackbar("Enter a valid phone number.", "orange")
 
     def show_snackbar(self, message, color):
-        snackbar = MDSnackbar(
+        MDSnackbar(
             MDLabel(text=message),
             MDSnackbarActionButton(text="OK", theme_text_color="Custom", text_color=color),
             y=dp(24),
             pos_hint={"center_x": 0.5},
             size_hint_x=0.9,
             md_bg_color="#E8D8D7",
-        )
-        snackbar.open()
+        ).open()
 
 class SignupScreen(Screen):
     def open_menu(self, caller):
-        menu_items = [
-            {"text": "Guest", "viewclass": "OneLineListItem", "on_release": lambda x="Guest": self.set_item(x)},
-            {"text": "Admin", "viewclass": "OneLineListItem", "on_release": lambda x="Admin": self.set_item(x)},
-        ]
-
-        self.menu = MDDropdownMenu(caller=caller, items=menu_items, width_mult=4)
-        self.menu.open()
+        MDDropdownMenu(
+            caller=caller,
+            items=[
+                {"text": "Guest", "viewclass": "OneLineListItem", "on_release": lambda x="Guest": self.set_item(x)},
+                {"text": "Admin", "viewclass": "OneLineListItem", "on_release": lambda x="Admin": self.set_item(x)},
+            ],
+            width_mult=4
+        ).open()
 
     def set_item(self, text):
         self.ids.user_type.text = text
-        self.menu.dismiss()
 
     def signup(self):
         full_name = self.ids.full_name.text.strip()
@@ -121,86 +99,76 @@ class SignupScreen(Screen):
         user_type = self.ids.user_type.text.strip()
         email = self.ids.email.text.strip()
         
-        if full_name and phone_number.isdigit():
-            existing_user = users_collection.find_one({"phone_number": phone_number})
-            if existing_user:
-                self.show_snackbar("Phone number already registered.", "red")
-            else:
-                users_collection.insert_one({"full_name": full_name, "phone_number": phone_number, "user_type": user_type, "email": email})
-                self.show_snackbar("Signup successful! Please verify OTP.", "green")
-                self.manager.current = "login_screen"
-        else:
+        if not all([full_name, phone_number.isdigit(), user_type, email]):
             self.show_snackbar("Enter valid details.", "orange")
+            return
+            
+        if users_collection.find_one({"phone_number": phone_number}):
+            self.show_snackbar("Phone number already registered.", "red")
+            return
+            
+        users_collection.insert_one({
+            "full_name": full_name,
+            "phone_number": phone_number,
+            "user_type": user_type,
+            "email": email
+        })
+        self.show_snackbar("Signup successful! Please login.", "green")
+        self.manager.current = "login_screen"
 
     def show_snackbar(self, message, color):
-        snackbar = MDSnackbar(
+        MDSnackbar(
             MDLabel(text=message),
             MDSnackbarActionButton(text="OK", theme_text_color="Custom", text_color=color),
             y=dp(24),
             pos_hint={"center_x": 0.5},
             size_hint_x=0.9,
             md_bg_color="#E8D8D7",
-        )
-        snackbar.open()
+        ).open()
 
 class OTPScreen(Screen):
-    session_info = None
-
     def verify_otp(self):
         entered_otp = self.ids.otp.text.strip()
-        if not self.session_info:
-            self.show_snackbar("Session expired. Request OTP again.", "red")
-            self.manager.current = "login_screen"
-            return
-
-        response = verify_otp(self.session_info, entered_otp)
-        # if response.get("success"):
+        global phone_num, gotp
         
-        
-        if entered_otp == str(gotp):
-            user = users_collection.find_one({"phone_number": phone_num})
-            if user:
-                username = user['full_name']
-                user_type = user['user_type']
-                user_id = str(user['_id'])
-                MDApp.get_running_app().session_manager.create_session(username, user_type, user_id)
-                self.show_snackbar("OTP Verified. Login Successful!", "green")
-                if user_type == "Admin":
-                    self.manager.current = "admin_home"
-                else:
-                    self.manager.current = "guest_home"
-            else:
-                self.show_snackbar("User not found in the database.", "red")
-        else:
+        if entered_otp != str(gotp):
             self.show_snackbar("Invalid OTP. Try again.", "red")
+            return
             
+        user = users_collection.find_one({"phone_number": phone_num})
+        if not user:
+            self.show_snackbar("User not found.", "red")
+            return
+            
+        username = user['full_name']
+        user_type = user['user_type']
+        user_id = str(user['_id'])
+        MDApp.get_running_app().session_manager.create_session(username, user_type, user_id)
+        self.show_snackbar("OTP Verified. Login Successful!", "green")
+        self.manager.current = "admin_home" if user_type == "Admin" else "guest_home"
 
     def show_snackbar(self, message, color):
-        snackbar = MDSnackbar(
+        MDSnackbar(
             MDLabel(text=message),
             MDSnackbarActionButton(text="OK", theme_text_color="Custom", text_color=color),
             y=dp(24),
             pos_hint={"center_x": 0.5},
             size_hint_x=0.9,
             md_bg_color="#E8D8D7",
-        )
-        snackbar.open()
+        ).open()
 
 class AuthApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.session_manager = SessionManager()
 
-    def change_screen(self, screen_name):
-        self.root.current = screen_name  
-        
     def build(self):
         self.theme_cls.primary_palette = "Teal"
         Builder.load_file("UI/authapp.kv")  
         Builder.load_file("UI/homepage.kv")   
         Builder.load_file("UI/files.kv")   
         Builder.load_file("UI/chatbot.kv")   
-
+        Builder.load_file("UI/ocr.kv")   
         sm = ScreenManager()
         sm.add_widget(LoginScreen(name="login_screen"))
         sm.add_widget(SignupScreen(name="signup_screen"))
@@ -208,15 +176,12 @@ class AuthApp(MDApp):
         sm.add_widget(GuestHomeScreen(name="guest_home"))
         sm.add_widget(AdminHomeScreen(name="admin_home"))
         sm.add_widget(FilesScreen(name="files_screen"))
-        sm.add_widget(ChatScreen(name="chatbot_screen"))
+        sm.add_widget(ChatbotScreen(name="chatbot_screen"))
+        sm.add_widget(OCRScreen(name="ocr_screen"))
 
         session = self.session_manager.get_session()
-        print(session)
         if session:
-            if session['user_type'] == "Admin":
-                sm.current = "admin_home"
-            else:
-                sm.current = "guest_home"
+            sm.current = "admin_home" if session['user_type'] == "Admin" else "guest_home"
         else:
             sm.current = "login_screen"
         return sm
