@@ -129,6 +129,14 @@ ScreenManager:
                 height: dp(50)
                 elevation: 3
                 on_release: root.go_to_otp()
+            MDRaisedButton:
+                text: "Biometric Login"
+                md_bg_color: 1, 0.6, 0.2, 1
+                text_color: 1, 1, 1, 1
+                size_hint: 1, None
+                height: dp(50)
+                elevation: 3
+                on_release: root.go_to_biometric()
 
 <OTPScreen>:
     md_bg_color: 0.95, 0.95, 0.95, 1

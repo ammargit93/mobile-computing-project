@@ -18,6 +18,7 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from biometric import BiometricLoginDialog, logger
 
 load_dotenv()
 
@@ -47,6 +48,59 @@ def send_email(to_email, subject, body):
         print(f"Failed to send email: {e}")
 
 class LoginScreen(Screen):
+    def go_to_biometric(self):
+        """Start biometric face recognition"""
+        phone_number = self.ids.phone_number.text.strip()
+        if not phone_number:
+            logger.warning("No phone number entered for biometric login")
+            self.show_snackbar("Enter phone number first", "red")
+            return
+            
+        logger.info(f"Starting biometric login for phone: {phone_number}")
+        
+        user = users_collection.find_one({"phone_number": phone_number[3:]})
+        if not user:
+            logger.warning(f"No user found for phone: {phone_number}")
+            self.show_snackbar("User not found", "red")
+            return
+            
+        reference_img = f"test.jpg"
+        logger.info(f"Using reference image: {reference_img}")
+        
+        def on_success():
+            """Handle successful recognition"""
+            logger.info("Biometric recognition successful")
+            self.on_biometric_success(user)
+        
+        self.biometric_dialog = BiometricLoginDialog(
+            reference_img_path=reference_img,
+            on_success=on_success
+        )
+        self.biometric_dialog.open()
+        logger.info("Biometric dialog opened")
+
+    def on_biometric_success(self, user):
+        """Handle successful biometric login"""
+        logger.info(f"Processing successful login for user: {user['_id']}")
+        username = user['full_name']
+        user_type = user['user_type']
+        user_id = str(user['_id'])
+        
+        MDApp.get_running_app().session_manager.create_session(
+            username, user_type, user_id
+        )
+        
+        logger.info("Session created, navigating to home screen")
+        self.show_snackbar("Biometric login successful!", "green")
+        self.manager.current = "admin_home" if user_type == "Admin" else "guest_home"
+
+    # ... rest of your existing code ...
+    def on_biometric_fail(self, dialog, message):
+        """Handle failed biometric login"""
+        dialog.dismiss()
+        self.show_snackbar(f"Biometric login failed: {message}", "red")
+
+        
     def go_to_otp(self):
         phone_number = self.ids.phone_number.text.strip()
         global phone_num
