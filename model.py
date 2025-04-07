@@ -35,7 +35,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def load_and_process_documents(file_path):
-    """Load and process documents based on file type"""
     if file_path.endswith('.pdf'):
         loader = PyMuPDFLoader(file_path)
     elif file_path.endswith('.txt'):
@@ -132,7 +131,7 @@ def chat_with_groq(prompt):
     if response.status_code == 200:
         return response.json().get("choices", [{}])[0].get("message", {}).get("content", "No response")
     return f"Error: {response.status_code} - {response.text}"
-
+    
 @app.route('/reset', methods=['POST'])
 def reset_conversation():
     """Reset conversation history"""

@@ -57,7 +57,7 @@
 
                 MDRectangleFlatButton:
                     text: "Chatbot"
-                    on_release: root.nav_to_chatbot()
+                    on_release: app.root.current = "chatbot_screen"
                     size_hint_y: None
                     height: dp(48)
                     theme_text_color: "Custom"

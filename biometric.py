@@ -8,13 +8,12 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
 import logging
 
-# Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(),  # Console output
-        logging.FileHandler('biometric.log')  # File output
+        logging.StreamHandler(),  
+        logging.FileHandler('biometric.log')  
     ]
 )
 logger = logging.getLogger(__name__)
@@ -25,9 +24,7 @@ class BiometricLoginDialog(MDDialog):
         self.on_success = on_success
         self.camera = None
         self.camera_image = Image()
-        
         logger.info("Initializing biometric login dialog")
-        
         super().__init__(
             title="Face Recognition Login",
             type="custom",
@@ -59,7 +56,7 @@ class BiometricLoginDialog(MDDialog):
             self.show_error(f"Camera error: {str(e)}")
 
     def update_frame(self, dt):
-        """Capture and process each frame"""
+        # """Capture and process each frame"""
         try:
             ret, frame = self.camera.read()
             if not ret:
@@ -111,7 +108,7 @@ class BiometricLoginDialog(MDDialog):
             self.show_error(f"Recognition error: {str(e)}")
 
     def update_camera_preview(self, frame):
-        """Update the dialog with camera frame"""
+        # """Update the dialog with camera frame"""
         try:
             buf = frame.tobytes()
             texture = Texture.create(
@@ -124,20 +121,20 @@ class BiometricLoginDialog(MDDialog):
             logger.error(f"Error updating camera preview: {str(e)}")
 
     def cancel_recognition(self, *args):
-        """Handle cancel button press"""
+        # """Handle cancel button press"""
         logger.info("Biometric login cancelled by user")
         self.cleanup()
         self.dismiss()
 
     def show_error(self, message):
-        """Display error message"""
+        # """Display error message"""
         logger.error(message)
         self.cleanup()
         self.dismiss()
         # You can show a snackbar here if needed
 
     def cleanup(self):
-        """Release camera resources"""
+        # """Release camera resources"""
         logger.info("Cleaning up biometric resources")
         if self.camera:
             self.camera.release()
@@ -146,7 +143,6 @@ class BiometricLoginDialog(MDDialog):
         logger.info("Frame update unscheduled")
 
     def on_dismiss(self):
-        """Ensure cleanup when dialog is dismissed"""
         logger.info("Dialog dismissed, performing cleanup")
         self.cleanup()
         super().on_dismiss()

@@ -1,6 +1,7 @@
 from kivy.uix.screenmanager import Screen
 from kivy.uix.filechooser import FileChooserListView
 from kivymd.uix.list import TwoLineAvatarListItem, IconLeftWidget
+from kivy.properties import ListProperty, StringProperty
 from kivymd.uix.button import MDFloatingActionButton, MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
 from kivy.core.window import Window
@@ -9,15 +10,15 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.snackbar import MDSnackbar
+from config import files_collection
 from kivy.metrics import dp
-from kivy.properties import ListProperty, StringProperty
+from datetime import datetime
 from kivy.clock import Clock
 from kivymd.app import MDApp
-import uuid
-from datetime import datetime
-from config import files_collection
-import os
 import shutil
+import uuid
+import os
+
 
 UPLOAD_FOLDER = "uploads"
 
@@ -330,7 +331,15 @@ class FilesScreen(Screen):
 
     def refresh_files(self):
         self._load_files(0)
-
+    def nav_to_ocr(self):
+        """Navigate to OCR screen"""
+        self.manager.current = "ocr_screen"
+    def nav_to_chatbot(self):
+        """Navigate to chatbot screen"""
+        self.manager.current = "chatbot_screen"
+    def nav_to_home(self):
+        """Navigate to home screen"""
+        self.manager.current = "home_screen"
     def show_snackbar(self, message):
         MDSnackbar(
             MDLabel(

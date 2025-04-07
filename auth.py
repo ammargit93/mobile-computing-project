@@ -2,7 +2,6 @@ from kivy.metrics import dp
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.app import MDApp
-from pymongo import MongoClient
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarActionButton
 from kivymd.uix.label import MDLabel
 from kivymd.uix.menu import MDDropdownMenu
@@ -11,43 +10,16 @@ from homescreen import GuestHomeScreen, AdminHomeScreen
 from filescreen import FilesScreen
 from chatbot import ChatbotScreen
 from ocr import OCRScreen
-import pyotp
 from dotenv import load_dotenv
 from config import notes_collection, users_collection
-import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from biometric import BiometricLoginDialog, logger
+import requests
 
 load_dotenv()
 
-email_address = os.getenv("EMAIL")
-email_password = os.getenv("PASSWORD")
-# client = MongoClient("mongodb://localhost:27017/")
-# db = client["appDB"]
-# users_collection = db["users"]
-# notes_collection = db["notes"]
-
-phone_num = None
-gotp = None
-
-def send_email(to_email, subject, body):
-    msg = MIMEMultipart()
-    msg["From"] = email_address
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(email_address, email_password)
-            server.sendmail(email_address, to_email, msg.as_string())
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-
 class LoginScreen(Screen):
+    API_BASE_URL = "http://localhost:5000"  # Flask API URL
+    
     def go_to_biometric(self):
         """Start biometric face recognition"""
         phone_number = self.ids.phone_number.text.strip()
@@ -92,36 +64,40 @@ class LoginScreen(Screen):
         
         logger.info("Session created, navigating to home screen")
         self.show_snackbar("Biometric login successful!", "green")
+        self.biometric_dialog.dismiss()
         self.manager.current = "admin_home" if user_type == "Admin" else "guest_home"
 
-    # ... rest of your existing code ...
     def on_biometric_fail(self, dialog, message):
         """Handle failed biometric login"""
         dialog.dismiss()
         self.show_snackbar(f"Biometric login failed: {message}", "red")
 
-        
     def go_to_otp(self):
         phone_number = self.ids.phone_number.text.strip()
-        global phone_num
-        phone_num = str(phone_number[3:])
-        user = users_collection.find_one({"phone_number": phone_num})
-        
-        if not user:
-            self.show_snackbar("User not found. Please sign up first.", "red")
+        if not phone_number:
+            self.show_snackbar("Enter a valid phone number.", "orange")
             return
             
-        if phone_number:
-            self.secret_key = pyotp.random_base32()
-            self.totp = pyotp.TOTP(self.secret_key)
-            global gotp
-            gotp = self.totp.now()
-            email = user['email']
-            send_email(email, "OTP Mail", f"Your OTP is {gotp}")
-            self.show_snackbar("OTP Sent Successfully! Check your mail!", "green")
-            self.manager.current = "otp_screen"
-        else:
-            self.show_snackbar("Enter a valid phone number.", "orange")
+        phone_num = str(phone_number[3:]) if phone_number.startswith("+91") else phone_number
+        
+        try:
+            response = requests.post(
+                f"{self.API_BASE_URL}/generate-otp",
+                json={"phone_number": phone_num}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.manager.get_screen("otp_screen").secret_key = data["secret_key"]
+                self.manager.get_screen("otp_screen").phone_number = phone_num
+                self.show_snackbar("OTP Sent Successfully! Check your mail!", "green")
+                self.manager.current = "otp_screen"
+            else:
+                error = response.json().get("error", "Failed to send OTP")
+                self.show_snackbar(error, "red")
+                
+        except requests.exceptions.RequestException as e:
+            self.show_snackbar("Failed to connect to OTP service", "red")
 
     def show_snackbar(self, message, color):
         MDSnackbar(
@@ -181,25 +157,45 @@ class SignupScreen(Screen):
         ).open()
 
 class OTPScreen(Screen):
+    API_BASE_URL = "http://localhost:5000"
+    secret_key = None
+    phone_number = None
+    
     def verify_otp(self):
         entered_otp = self.ids.otp.text.strip()
-        global phone_num, gotp
         
-        if entered_otp != str(gotp):
-            self.show_snackbar("Invalid OTP. Try again.", "red")
+        if not all([entered_otp, self.secret_key, self.phone_number]):
+            self.show_snackbar("Invalid OTP verification request", "red")
             return
             
-        user = users_collection.find_one({"phone_number": phone_num})
-        if not user:
-            self.show_snackbar("User not found.", "red")
-            return
+        try:
+            response = requests.post(
+                f"{self.API_BASE_URL}/verify-otp",
+                json={
+                    "phone_number": self.phone_number,
+                    "otp": entered_otp,
+                    "secret_key": self.secret_key
+                }
+            )
             
-        username = user['full_name']
-        user_type = user['user_type']
-        user_id = str(user['_id'])
-        MDApp.get_running_app().session_manager.create_session(username, user_type, user_id)
-        self.show_snackbar("OTP Verified. Login Successful!", "green")
-        self.manager.current = "admin_home" if user_type == "Admin" else "guest_home"
+            if response.status_code == 200:
+                data = response.json()
+                user = data["user"]
+                
+                MDApp.get_running_app().session_manager.create_session(
+                    user["full_name"],
+                    user["user_type"],
+                    user["id"]
+                )
+                
+                self.show_snackbar("OTP Verified. Login Successful!", "green")
+                self.manager.current = "admin_home" if user["user_type"] == "Admin" else "guest_home"
+            else:
+                error = response.json().get("error", "OTP verification failed")
+                self.show_snackbar(error, "red")
+                
+        except requests.exceptions.RequestException as e:
+            self.show_snackbar("Failed to connect to OTP service", "red")
 
     def show_snackbar(self, message, color):
         MDSnackbar(
@@ -240,5 +236,5 @@ class AuthApp(MDApp):
             sm.current = "login_screen"
         return sm
 
-if __name__ == '__main__':
-    AuthApp().run()
+# if __name__ == '__main__':
+#     AuthApp().run()

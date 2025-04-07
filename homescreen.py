@@ -114,6 +114,10 @@ class GuestHomeScreen(Screen):
                 "user_id": user_id})
         self.dismiss_popup()
 
+    def change_screen(self, screen_name):
+        """Change the screen to the specified screen name"""
+        self.manager.current = screen_name
+        
     def show_note_details(self, title, description):
         scroll_view = MDScrollView()
 
